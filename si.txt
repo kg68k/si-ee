@@ -526,20 +526,6 @@ Medium Type
 	起動時にチェックして何もせず終了するようにしています。
 
 
-☆ コンパイルオプション
-
-	　make 時に以下のシンボルを定義することで機能を調整できます。
-
-ENABLE_DISABLE
-
-	　キャッシュの有効/無効を on/off ではなく enable/disable と表示します。
-
-SHUTDOWN_COUNT
-
-	　boot count の代わりに shutdown count を表示します。単に 1 小さい値が
-	表示されるだけです。
-
-
 ☆ 許諾
 
 	　Si はフリーソフトウェアです。自由に配布していただいて結構ですが、配

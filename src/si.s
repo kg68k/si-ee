@@ -5,11 +5,6 @@ VERSION:	.reg	'3.80 beta'
 DATE:		.reg	'2022-02-22'
 
 
-# symbol:
-#	ENABLE_DISABLE	cache on/off を enable/disable と表示する.
-#	SHUTDOWN_COUNT	boot count ではなく shutdown count を表示する.
-
-
 * Include File -------------------------------- *
 
 		.include	fefunc.mac
@@ -1251,7 +1246,6 @@ strcpy_slash:
 		rts
 
 print_cache_on_off:
-	.ifndef	ENABLE_DISABLE
 		move.b	#'o',(a0)+
 		btst	d1,d0
 		beq	@f
@@ -1260,16 +1254,6 @@ print_cache_on_off:
 @@:		move.b	#'f',(a0)
 		move.b	(a0)+,(a0)+		;off
 		rts
-	.else
-		move.l	a1,-(sp)
-		btst	d1,d0
-		lea	(int_enable,pc),a1
-		beq	@f
-		addq.l	#int_disable-int_enable,a1
-@@:		STRCPY	a1,a0,-1
-		movea.l	(sp)+,a1
-		rts
-	.endif
 
 
 * MPU キャッシュの状態を返す.
@@ -2332,12 +2316,10 @@ print_boot_count:
 		STRCPY	a1,a0,-1
 
 		move.l	(SRAM_POWOFF),d0
-	.ifndef	SHUTDOWN_COUNT
 		addq.l	#1,d0			;起動回数は終了回数より1多い
 **		bcc	@f
 **		subq.l	#1,d0
 **@@:
-	.endif
 		bsr	decstr
 
 		STRCPY_CRLF a0
@@ -2347,11 +2329,7 @@ print_boot_count:
 
 
 pow_on_title:
-	.ifdef	SHUTDOWN_COUNT
-		.dc.b	'shutdown count		:	',0
-	.else
 		.dc.b	'boot count		:	',0
-	.endif
 		.even
 
 

@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-02-21'
+DATE:		.reg	'2022-02-22'
 
 
 # symbol:
@@ -17,10 +17,7 @@ DATE:		.reg	'2022-02-21'
 		.include	iocscall.mac
 		.include	scsicall.mac
 
-		.include	macro.mac
-		.include	vector.mac
-		.include	console.mac
-		.include	iocswork.mac
+		.include	si.mac
 
 
 * Global Symbol ------------------------------- *
@@ -245,33 +242,6 @@ SCSIIN_ID:	.equ	$fc0024			;'SCSIIN'
 
 
 * Macro --------------------------------------- *
-
-STRCPY:		.macro	_s,_d
-@loop:		move.b	(_s)+,(_d)+
-		bne	@loop
-		subq.l	#1,_d
-		.endm
-
-STRCPY_:	.macro	_s,_d
-@loop:		move.b	(_s)+,(_d)+
-		bne	@loop
-		.endm
-
-STRCPY_CRLF:	.macro	_d
-	.ifdef	__CRLF__
-		move.b	#CR,(_d)+
-	.endif
-		move.b	#LF,(_d)+
-		clr.b	(_d)
-		.endm
-
-RTC_WAIT:	.macro
-		nop
-		tst.b	(JOYSTICK1)
-		nop
-		tst.b	(JOYSTICK1)
-		nop
-		.endm
 
 SRAM_WRITE_ENABLE:	.macro
 		move.b	#$31,(SYS_P7)
@@ -657,7 +627,7 @@ print_emulator:
 		lea	(-256,sp),sp
 		lea	(emu_title,pc),a1
 		lea	(sp),a0
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	(emu_ver_type,a6),d0
 		bsr	Emulator_ToString
@@ -689,7 +659,7 @@ print_host:
 		lea	(-512,sp),sp
 		lea	(sp),a0
 		lea	(host_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		bsr	Model_GetType
 		move.l	d0,d7
@@ -704,7 +674,7 @@ print_host:
 print_host_acc_loop:
 		bsr	Accelerator_ToString
 		lea	(_on_,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		tst	d0
 		bne	print_host_acc_loop
 
@@ -824,7 +794,7 @@ print_romver:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(romver_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	(rom_version,a6),d0
 		bsr	print_romver_sub
@@ -853,7 +823,7 @@ print_romver:
 		cmpi.l	#$4eb9_00ff,($ff0ace)
 		bne	@f
 		lea	(rom_movep_pat,pc),a1	;JUPITER-X on XVI 用のパッチ済み ROM
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 @@:
 		move.b	#')',(a0)+
 		STRCPY_CRLF a0
@@ -894,7 +864,7 @@ print_clockswitch:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(clocksw_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		moveq	#%1111_0000,d0
 		or.b	(SYS_P6),d0
@@ -905,7 +875,7 @@ print_clockswitch:
 		add	d0,d0
 		move	(clocksw_table,pc,d0.w),(a1)
 @@:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
@@ -928,7 +898,7 @@ print_mpu:
 		lea	(-512,sp),sp
 		lea	(sp),a0
 		lea	(mpu_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		pea	(a0)
 		clr.l	-(sp)
@@ -965,7 +935,7 @@ print_mpu_no_env:
 print_mpu_680x0:
 		lea	(mpu_68000,pc),a1	;680x0
 print_mpu_set:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		add.b	d7,(-2,a0)
 print_mpu_clock:
 		move.b	#' ',(a0)+
@@ -1000,12 +970,12 @@ print_mpu_clock_print:
 		clr	d0
 		swap	d0			;整数部(1MHz 単位)
 		bsr	decstr
-		STRCPY	a1,a0			;.?MHz)
+		STRCPY	a1,a0,-1		;.?MHz)
 
 		cmp.b	(MPUTYPE),d7		;IOCS ワークの値を確かめる
 		beq	@f
 		lea	(mputype_bug,pc),a1	;IOCS ワークに設定されている MPU 種類
-		STRCPY	a1,a0			;が間違っていたら警告を表示する
+		STRCPY	a1,a0,-1		;が間違っていたら警告を表示する
 		move.l	(MPUTYPE),d0
 **		ror.l	#8,d0
 		bsr	hexstr_byte
@@ -1014,7 +984,7 @@ print_mpu_clock_print:
 		tst.b	d6
 		beq	@f
 		lea	(romcnt_bug,pc),a1	;IOCS ワークに MPU 速度が設定されて
-		STRCPY	a1,a0			;いなかったら警告を表示する
+		STRCPY	a1,a0,-1		;いなかったら警告を表示する
 @@:
 		STRCPY_CRLF a0
 		bsr	print_stack_buffer
@@ -1176,7 +1146,7 @@ print_mpu_rev:
 		bne	print_mpu_rev_skip
 
 		lea	(mpu_rev_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 *		move.b	#'$',(a0)+
 		.cpu	68060
@@ -1225,7 +1195,7 @@ print_cache_000:
 print_cache_010:
 print_cache_xxx:
 		lea	(cache_title,pc),a1	;キャッシュ無し
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		bra	print_cache_nothing
 
 ;(instruction / no data cache)
@@ -1234,7 +1204,7 @@ print_cache_020:
 print_cache_030:
 print_cache_040:
 		lea	(cache_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		moveq	#1,d1			;命令
 		bsr	print_cache_on_off
@@ -1251,7 +1221,7 @@ print_cache_040:
 ;(SuperScalar / Branch Cache / Store Buffer / Instruction / Data)
 print_cache_060:
 		lea	(cache_title060,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		moveq	#4,d1
 		bra	@f
 print_cache_68060_loop:
@@ -1266,7 +1236,7 @@ print_cache_nothing:
 
 		lea	(without_cache,pc),a1
 print_cache_over:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 print_cache_over2:
 		STRCPY_CRLF a0
 		bsr	print_stack_buffer
@@ -1296,7 +1266,7 @@ print_cache_on_off:
 		lea	(int_enable,pc),a1
 		beq	@f
 		addq.l	#int_disable-int_enable,a1
-@@:		STRCPY	a1,a0
+@@:		STRCPY	a1,a0,-1
 		movea.l	(sp)+,a1
 		rts
 	.endif
@@ -1375,7 +1345,7 @@ print_2nd_cache:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(cache2_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		bsr	is_exist_venus_x
 		beq	print_2nd_cache_nothing
@@ -1391,7 +1361,7 @@ print_2nd_cache:
 		lsr.b	#4,d2			;対象 MPU
 		add.b	d2,(vx_mpu-cache2_vx,a1)
 print_cache_last:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		STRCPY_CRLF a0
 		bsr	print_stack_buffer
 print_2nd_cache_skip:
@@ -1456,7 +1426,7 @@ print_mmu:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(mmu_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.b	(mpu_type,a6),d1
 		cmpi.b	#1,d1
@@ -1476,7 +1446,7 @@ print_mmu_nothing:
 
 		lea	(not_installed,pc),a1
 @@:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 print_mmu_skip:
 		lea	(256,sp),sp
@@ -1503,7 +1473,7 @@ print_fpu:
 		lea	(-512,sp),sp
 		lea	(sp),a0
 		lea	(fpu_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		bsr	print_fpu_env
 		beq	print_fpu_end
@@ -1519,7 +1489,7 @@ print_fpu:
 		beq	print_fpu_copro
 
 		lea	(fpu_onchip,pc),a1	;68040/68060内蔵
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		cmpi.b	#6,(mpu_type,a6)
 		bne	print_fpu_copro
 
@@ -1527,7 +1497,7 @@ print_fpu:
 		btst	#FPU_ONCHIP,d7
 		beq	@f
 		lea	(fpu_disable,pc),a1
-@@:		STRCPY	a1,a0
+@@:		STRCPY	a1,a0,-1
 
 print_fpu_copro:
 		btst	#FPU_COPRO,d6
@@ -1537,7 +1507,7 @@ print_fpu_copro:
 		btst	#FPU_COPRO,d7
 		bsr	print_fpu_6888x
 		lea	(fpu_plcc,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 print_fpu_io1:
 		btst	#FPU_IO1,d6
@@ -1563,7 +1533,7 @@ print_fpu_io_done:
 print_fpu_end:
 		lea	(crlf,pc),a1
 print_fpu_end2:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 		lea	(512,sp),sp
 		rts
@@ -1588,7 +1558,7 @@ print_fpu_6888x:
 		beq	@f
 		addq.l	#fpu_68882-fpu_68881,a1
 @@:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		rts
 
 
@@ -1823,7 +1793,7 @@ print_vernum:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(vernum_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		DOS	_VERNUM
 		move.b	d0,-(sp)
@@ -1863,7 +1833,7 @@ print_syspatch:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(sysp_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		suba.l	a3,a3			;警告メッセージ
 
 		cmpi.b	#2,(MPUTYPE)		;IOCS _SYS_STAT を使うので $cbc.b 参照
@@ -1931,7 +1901,7 @@ print_sysp_no_040sipl:
 		bne	print_sysp_setver2	;040SYSpatch.x
 
 		lea	(sysp_040sram,pc),a1	;040SRAMpatch.r
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		bsr	print_float_sub		;version x.xx
 		move.b	#'.',(a0)+
 		move.l	(8,a2),d0		;リリース番号
@@ -1948,14 +1918,14 @@ print_sysp_no_040sp:
 print_sysp_setver2:
 		move.l	d2,d0
 print_sysp_setver:
-		STRCPY	a1,a0			;ドライバ名をコピー
+		STRCPY	a1,a0,-1		;ドライバ名をコピー
 		lea	(sysp_version,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 print_sysp_setrel:
 		bsr	print_float_sub		;バージョン番号(or リリース番号)
 		move.l	a3,d0
 		beq	@f
-		STRCPY	a3,a0
+		STRCPY	a3,a0,-1
 @@:
 		STRCPY_CRLF a0
 print_sysp_print:
@@ -1969,7 +1939,7 @@ print_sysp_skip:
 		beq	print_sysp_end
 
 		lea	(not_installed,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		bra	print_sysp_print
 
 
@@ -2012,7 +1982,7 @@ print_float:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(float_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	#FLOAT_ID,d0		;FLOATn.X の常駐検査
 		movea.l	(FLINE_VEC*4),a1
@@ -2031,7 +2001,7 @@ print_float_nothing:
 		beq	print_float_skip
 
 		lea	(not_installed,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		bra	print_float_last
 
 print_float_exist:
@@ -2048,7 +2018,7 @@ print_float_exist:
 		or.l	d1,d0
 		beq	@f			;d0=2、d1=0 なら問題なし
 		lea	(idiv_bug,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 @@:
 		STRCPY_CRLF a0
 print_float_last:
@@ -2252,7 +2222,7 @@ get_himem_free_size:
 print_memsize_sub:
 		lea	(-256,sp),sp
 		lea	(sp),a0
-		STRCPY	a1,a0			;title
+		STRCPY	a1,a0,-1		;title
 		lea	(not_installed,pc),a1
 		tst.l	d0
 		ble	print_memsize_sub_end
@@ -2263,7 +2233,7 @@ print_memsize_sub:
 		moveq	#MEMSIZE_LEN,d1
 		bsr	fe_iusing
 		lea	(memsize_kb,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 ;空き容量
 		move.l	(sp)+,d0
 		lsr.l	#8,d0
@@ -2272,7 +2242,7 @@ print_memsize_sub:
 		bsr	fe_iusing
 		lea	(memsize_kb_free,pc),a1
 print_memsize_sub_end:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
@@ -2294,7 +2264,7 @@ print_sram:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(sram_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		bsr	get_sram_size
 
@@ -2304,7 +2274,7 @@ print_sram:
 		bsr	fe_iusing
 
 		lea	(sramsize_kb,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		lea	(sram_free,pc),a1
 		move.b	(SRAM_USEMODE),d0
@@ -2316,7 +2286,7 @@ print_sram:
 		beq	@f
 		lea	(sram_unknown,pc),a1
 @@:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
@@ -2359,7 +2329,7 @@ print_boot_count:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(pow_on_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	(SRAM_POWOFF),d0
 	.ifndef	SHUTDOWN_COUNT
@@ -2393,7 +2363,7 @@ print_bootinf:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(boot_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		IOCS	_BOOTINF
 		move.l	d0,-(sp)
@@ -2447,14 +2417,14 @@ print_bootinf_sram:
 
 		move.l	d1,d0			;起動アドレス
 		lea	(boot_sram,pc),a1
-@@:		STRCPY	a1,a0
+@@:		STRCPY	a1,a0,-1
 		bsr	hexstr_z
 		bra	print_bootinf_switch
 
 print_bootinf_sxsi:
 		move.l	d1,d0			;起動アドレス
 		lea	(boot_sxsi,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		bsr	hexstr_z
 		move.b	#')',(a0)+
 		bra	print_bootinf_switch
@@ -2471,7 +2441,7 @@ print_bootinf_sasi:
 print_bootinf_fdd:
 		lea	(boot_fdd,pc),a1
 @@:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 print_bootinf_switch:
 	.irpc	char," / "
@@ -2487,7 +2457,7 @@ print_bootinf_switch:
 		lea	(boot_timer,pc),a1
 		beq	@f
 		lea	(boot_unknown,pc),a1
-@@:		STRCPY_	a1,a0
+@@:		STRCPY	a1,a0
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
@@ -2517,7 +2487,7 @@ print_scsi:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(scsi_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		moveq	#0,d7
 
@@ -2561,7 +2531,7 @@ print_scsi_no_ex:
 		beq	print_scsi_end
 		lea	(not_installed,pc),a1
 @@:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 print_scsi_end:
 		lea	(256,sp),sp
@@ -2596,7 +2566,7 @@ print_scsi_sub2:
 		beq	@f
 		bsr	strcpy_slash
 @@:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 print_scsi_sub_end:
 		rts
 
@@ -2835,7 +2805,7 @@ print_runtime:
 print_time_sub:
 		lea	(-256,sp),sp
 		lea	(sp),a0
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	d1,d0
 		bne	print_time_sub_day
@@ -2892,7 +2862,7 @@ print_error_count:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(error_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	(a2)+,d0		;SRAM_ASKA_ADR
 		bsr	decstr
@@ -2919,7 +2889,7 @@ print_printer:
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(printer_title,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		lea	(online_mes,pc),a1
 		IOCS	_SNSPRN
@@ -2929,7 +2899,7 @@ print_printer:
 		tst.b	(opt_all_flag,a6)
 		beq	print_printer_skip
 @@:
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 print_printer_skip:
 		lea	(256,sp),sp
@@ -2964,7 +2934,7 @@ print_io_board:
 		lea	(-256,sp),sp
 		lea	(sp),a3
 		lea	(board_title,pc),a1
-		STRCPY	a1,a3			;a3=書き込みアドレス
+		STRCPY	a1,a3,-1		;a3=書き込みアドレス
 
 		moveq	#0,d6			;1=一枚でもボードが存在する
 
@@ -3073,7 +3043,7 @@ print_iob_no_ts6bga:
 		addq.b	#'2'-'0',(B_ADR0_1,a0)
 		addq.b	#'7'-'1',(B_ADR1_3,a0)
 @@:
-		STRCPY	a0,a2
+		STRCPY	a0,a2,-1
 print_iob_scsiex_exist:
 		bsr	print_iob_sub2		;a1=ボード名
 print_iob_no_scsiex:
@@ -3278,7 +3248,7 @@ print_iob_no_fs3:
 		btst	d0,#1<<MERC_V4+1<<MERC_V4OPNA
 		beq	@f
 		addq.b	#8,(B_ADR0_1,a1)	;V4 は開始アドレスが違う
-@@:		STRCPY	a1,a2
+@@:		STRCPY	a1,a2,-1
 
 		add	d0,d0
 		lea	(b_mu_tbl,pc),a1
@@ -3460,7 +3430,7 @@ print_iob_no_poly_psx:
 		beq	print_iob_end
 
 		lea	(not_installed,pc),a1
-		STRCPY	a1,a3
+		STRCPY	a1,a3,-1
 		bsr	print_stack_buffer
 
 * おしまい
@@ -3474,7 +3444,7 @@ print_iob_sub:
 		lea	(a3),a2
 print_iob_sub2:
 		move.l	a1,-(sp)
-		STRCPY	a1,a2
+		STRCPY	a1,a2,-1
 		movea.l	(sp)+,a1
 		STRCPY_CRLF a2
 		moveq	#1,d6			;ボード有り
@@ -3618,7 +3588,7 @@ print_iob_nept_sub:
 		bsr	print_iob_inc_id
 @@:
 		lea	(a3),a2
-		STRCPY	a1,a2			;一行目をコピー
+		STRCPY	a1,a2,-1		;一行目をコピー
 		bsr	print_iob_ne_mac	;MAC アドレス付け加え
 
 		lea	(b_ne_nul,pc),a1
@@ -3646,7 +3616,7 @@ print_iob_nereid_sub:
 		bsr	print_iob_inc_id
 @@:
 		lea	(a3),a2
-		STRCPY	a1,a2			;一行目をコピー
+		STRCPY	a1,a2,-1		;一行目をコピー
 		bsr	print_iob_ne_mac	;MAC アドレス付け加え
 
 		lea	(b_ne_nul,pc),a1
@@ -3745,7 +3715,7 @@ print_iob_fs_loop:
 		lea	(-256,sp),sp
 		lea	(board_title,pc),a1
 		lea	(sp),a2
-		STRCPY	a1,a2
+		STRCPY	a1,a2,-1
 
 		lea	(hex_table,pc),a1
 		move.b	(a1,d7.w),d0
@@ -4072,7 +4042,7 @@ print_pfm_loop:
 		swap	d2
 		move.b	d2,(a0)+		;    第二位
 	.endif
-		STRCPY_	a1,a0			;"%" or "% as ..."
+		STRCPY	a1,a0			;"%" or "% as ..."
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
@@ -4139,7 +4109,11 @@ print_wait_mes_end:
 
 
 rtc_wait:
-		RTC_WAIT
+		nop
+		tst.b	(JOYSTICK1)
+		nop
+		tst.b	(JOYSTICK1)
+		nop
 		rts
 
 
@@ -4657,7 +4631,7 @@ print_scsi_info_loop:
 @@:
 	.endif
 		subq.l	#2,a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.b	(SRAM_SCSI_ID),d0
 		eor.b	d4,d0			;下位 3 ビットが一致すればイニシエータ
@@ -4687,14 +4661,14 @@ print_scsi_info_loop:
 no_additional_inquiry:
 		addq.l	#8,a1			;製品名
 		clr.b	(28,a1)
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		STRCPY_CRLF a0
 		bsr	print_stack_buffer
 
 		lea	(~scsi_strbuf,sp),a0
 		lea	(scsi_devtype,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		moveq	#0,d0
 		move.b	(~scsi_inqbuf+0,sp),d0	;デバイス種別
@@ -4707,12 +4681,12 @@ no_additional_inquiry:
 		add	d0,d0
 		lea	(pdt_table,pc),a1
 		adda	(a1,d0.w),a1
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 
 		lea	(~scsi_strbuf,sp),a0
 		lea	(scsi_ansi,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		moveq	#%111,d0
 		and.b	(~scsi_inqbuf+2,sp),d0	;ANSI準拠規格
@@ -4722,19 +4696,19 @@ no_additional_inquiry:
 @@:		add	d0,d0
 		lea	(ansi_table,pc),a1
 		adda	(a1,d0.w),a1
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 
 		lea	(~scsi_strbuf,sp),a0
 		lea	(scsi_media,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		tst.b	(~scsi_inqbuf+1,sp)
 		smi	d6
 		bpl	scsi_not_rmb
 
 		lea	(media_rmb,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 scsi_not_rmb:
 		lea	(~scsi_inqbuf,sp),a1
 		moveq	#0,d2
@@ -4750,7 +4724,7 @@ scsi_not_rmb:
 		bsr	strcpy_slash
 @@:
 		lea	(media_writep,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		st	d6
 scsi_not_writep:
 		STRCPY_CRLF a0
@@ -4772,7 +4746,7 @@ print_scsi_info_initiator:
 		moveq	#'2',d0
 @@:		move.b	d0,(12,a1)		;X680x0
 scsi_info_vendor:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	d4,d0
 		bsr	is_exist_sxsi
@@ -4799,10 +4773,10 @@ scsi_info_vendor:
 		lea	(scsi_info_tbl,pc,d0.w),a1
 		adda	(a1),a1
 scsi_info_type:
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		lea	(vendor_end,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 
 		move.l	d7,d0
 		bsr	scsi_level_to_str	;レベルを表示する
@@ -4811,9 +4785,9 @@ scsi_info_type:
 
 		lea	(~scsi_strbuf,sp),a0
 		lea	(scsi_devtype,pc),a1
-		STRCPY	a1,a0
+		STRCPY	a1,a0,-1
 		lea	(pdt_initiator,pc),a1
-		STRCPY_	a1,a0
+		STRCPY	a1,a0
 		bsr	print_stack_buffer
 
 print_scsi_info_next2:
@@ -4900,7 +4874,7 @@ scsi_level_to_str:
 		sub.l	d0,a0
 		sub.l	d0,a1
 		exg	a0,a1
-		STRCPY	a1,a0			;28 桁にちょうど収まるように...
+		STRCPY	a1,a0,-1		;28 桁にちょうど収まるように...
 		bra	scsi_level_to_str_end
 
 scsi_level_to_str_long:
@@ -5080,8 +5054,8 @@ print_int_sub:
 		move.b	(a0)+,d0
 
 		lea	(4,sp),a2
-		STRCPY	a0,a2			;割り込み名称
-		STRCPY	a1,a2			;許可/禁止
+		STRCPY	a0,a2,-1		;割り込み名称
+		STRCPY	a1,a2,-1		;許可/禁止
 
 		lea	(crlf,pc),a0
 		lsl	#2,d0
@@ -5091,7 +5065,7 @@ print_int_sub:
 		lea	(int_can_hook,pc),a0
 		bne	@f			;!=0なら割り込み設定可能
 		lea	(int_cant_hook,pc),a0	;==0なら不可能
-@@:		STRCPY_	a0,a2
+@@:		STRCPY	a0,a2
 
 		bra	print_stack_buffer	;(4,sp) = buffer
 *		rts				;bsrだと(8,sp)になるので不可

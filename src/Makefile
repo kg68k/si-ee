@@ -36,8 +36,8 @@ $(SI_R): $(OBJS)
 $(SI_X): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
-%.o: %.s
-	$(AS) $(ASFLAGS) $(SIOPT) $^
+%.o: %.s si.mac
+	$(AS) $(ASFLAGS) $(SIOPT) $<
 
 
 install:

@@ -1,0 +1,144 @@
+.nlist
+
+.ifndef	__si_mac__
+        __si_mac__:=1
+
+
+;680x0 Status Register
+
+SR_T:  .equ 15
+SR_T1: .equ 15
+SR_T0: .equ 14
+SR_S:  .equ 13
+SR_M:  .equ 12
+SR_I2: .equ 10
+SR_I1: .equ 9
+SR_I0: .equ 8
+CCR_X: .equ 4
+CCR_N: .equ 3
+CCR_Z: .equ 2
+CCR_V: .equ 1
+CCR_C: .equ 0
+
+SR_I_MASK: .equ (1<<SR_I2+1<<SR_I1+1<<SR_I0)
+
+
+;680x0 Vector
+
+BUSERR_VEC:   .equ $02
+ILLEGAL_VEC:  .equ $04
+PRIV_VEC:     .equ $08
+FLINE_VEC:    .equ $0b
+FPU_PROT_VEC: .equ $0d
+SPURIOUS_VEC: .equ $18
+TRAP14_VEC:   .equ $2e
+OPMINT_VEC:   .equ $43
+TIMERD_VEC:   .equ $44
+TIMERC_VEC:   .equ $45
+TIMERA_VEC:   .equ $4d
+CRTCRAS_VEC:  .equ $4e
+HSYNC_VEC:    .equ $4f
+PRNREADY_VEC: .equ $63
+
+
+;Ascii Code
+
+BS:  .equ $08
+LF:  .equ $0a
+CR:  .equ $0d
+ESC: .equ $1b
+
+.ifdef __CRLF__
+  CRLF: .reg CR,LF
+.else
+  CRLF: .reg LF
+.endif
+
+
+;X680x0 IOCS Work
+
+IOCS_VECTBL: .equ $400
+
+MMUEXIST: .equ $cbe  ;1.b
+ROMCNT:   .equ $cb8
+MPUTYPE:  .equ $cbc  ;1.b
+
+IOCS_ROM: .equ $ff0000
+
+
+;Macro
+
+PUSH: .macro regs
+  movem.l regs,-(sp)
+.endm
+
+POP: .macro regs
+  movem.l (sp)+,regs
+.endm
+
+DI: .macro
+  ori #SR_I_MASK,sr
+.endm
+
+EI: .macro
+  andi #.not.SR_I_MASK,sr
+.endm
+
+PUSH_SR_DI: .macro
+  move sr,-(sp)
+  DI
+.endm
+
+POP_SR: .macro
+  move (sp)+,sr
+.endm
+
+STRCPY: .macro src,dst,rewind
+  .sizem sz,argc
+  @loop:
+    move.b (src)+,(dst)+
+  bne @loop
+  .if argc>=3
+    subq.l #-(rewind),dst
+  .endif
+.endm
+
+STRCPY_CRLF: .macro dst
+  .ifdef __CRLF__
+    move.b #CR,(dst)+
+  .endif
+  move.b #LF,(dst)+
+  clr.b (dst)
+.endm
+
+STREND: .macro areg
+  @loop:
+    tst.b (areg)+
+  bne @loop
+  subq.l #1,areg
+.endm
+
+STRCAT: .macro src,dst
+  @loop1:
+    tst.b (dst)+
+  bne @loop1
+  subq.l #1,dst
+  @loop2:
+    move.b (src)+,(dst)+
+  bne @loop2
+.endm
+
+STRLEN: .macro areg,dreg
+  move.l areg,dreg
+  @loop:
+    tst.b (areg)+
+  bne @loop
+  subq.l #1,areg
+  exg dreg,areg
+  sub.l areg,dreg
+.endm
+
+
+.endif
+
+.list

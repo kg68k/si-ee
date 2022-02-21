@@ -1,6 +1,6 @@
 .title Si - Model
 
-.include macro.mac
+.include si.mac
 
 .xref check_bus_error_byte
 .xref check_bus_error_long
@@ -188,8 +188,7 @@ Model_ToString::
   move.b (a1),d0
   adda d0,a1
 
-  STRCPY a1,a0
-  subq.l #1,a0
+  STRCPY a1,a0,-1
 
   movea.l (sp)+,a1
   rts

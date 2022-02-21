@@ -1,6 +1,6 @@
 .title Si - Accelerator
 
-.include macro.mac
+.include si.mac
 
 .xref check_bus_error_byte
 .xref check_bus_error_word
@@ -297,8 +297,7 @@ Accelerator_ToString::
     lea (accNameOffs,pc,d6.w),a1
     move.b (a1),d6
     adda d6,a1
-    STRCPY a1,a0
-    subq.l #1,a0
+    STRCPY a1,a0,-1
 9:
   move.l d7,d0
   POP d1/d6-d7/a1
@@ -331,8 +330,7 @@ copyXellent30:
   @@:
   move.b (a1),d1
   adda d1,a1
-  STRCPY a1,a0
-  subq.l #1,a0
+  STRCPY a1,a0,-1
   rts
 
 .data

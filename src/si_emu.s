@@ -1,6 +1,6 @@
 .title Si - Emulator
 
-.include macro.mac
+.include si.mac
 .include doscall.mac
 
 .xref check_bus_error_byte
@@ -177,15 +177,13 @@ Emulator_ToString::
   lea (emuNameOffs,pc,d0.w),a1
   move.b (a1),d0
   adda d0,a1
-  STRCPY a1,a0
-  subq.l #1,a0
+  STRCPY a1,a0,-1
 
   clr d0
   swap d0
   beq 9f  ;バージョン番号なし
     lea (version,pc),a1
-    STRCPY a1,a0
-    subq.l #1,a0
+    STRCPY a1,a0,-1
 
     subq.l #8,sp
     lea (sp),a1
@@ -195,8 +193,7 @@ Emulator_ToString::
     bne @f
       addq.l #1,a1  ;十の位が0なら省略する
     @@:
-    STRCPY a1,a0
-    subq.l #1,a0
+    STRCPY a1,a0,-1
     addq.l #8,sp
 9:
   POP d1-d3/a1

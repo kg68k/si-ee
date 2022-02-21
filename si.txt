@@ -1,0 +1,668 @@
+┌─────────────────────────────────────┐
+│			System Infomation Version 1.03			    │
+│		  Copyright 1992-1993 Programed By M.Satake		    │
+│									    │
+│		      Modified Version Programed By BEL.		    │
+│			      BEL's DIVE Ware #2			    │
+│									    │
+│			System Information version 3.00			    │
+│		       Copyright (C)1997 Arisugawa Seara		    │
+│									    │
+│		      System Information Extended Edition		    │
+│			Copyright (C)1999-2022 TcbnErik			    │
+└─────────────────────────────────────┘
+
+
+☆ 機能
+
+	　X680x0 のシステムリポートを行います。
+
+	　引数を与えずに起動した場合、各種情報を表示して簡単なベンチマークを行
+	います。引数を指定すれば、状態を表示せず終了コードとして返すことも出来
+	ます。
+
+
+☆ オプション
+
+	　'-'＋アルファベット一文字のオプションは、アルファベットを続けて指定
+	できます。'-f-'＋機能名のオプションと '--'＋英単語のオプションは必ず区
+	切って指定して下さい。オプションは基本的に全て小文字で指定して下さい。
+
+	　-a と --all、-a -c と -ac などは同じ意味になります。ちなみに -a、-c、
+	-p はトグルスイッチとなっています(意味はありませんが)。
+
+-a / --all
+
+	　デバイスが存在しない場合その項目は表示されませんが、このオプションを
+	指定すると常に表示するようになります。
+
+-c / --cut
+
+	　速度表示を行ないません。
+
+-p / --power
+
+	　速度表示だけを行ないます。
+
+-m / --m35
+
+	　Mercury-Unit の V3.1 以下と V3.5 の判別を行います。ただし、ボードの
+	設定が変更されたり、動作中に実行すると音が乱れる可能性があります。
+
+	　このオプションを指定しない場合、V3.5 以下と V4 / V4 OPNA 付きの判別
+	のみ行い、V3.1 以下と V3.5 は同一視されます。
+
+	　-f-merc と併用する場合は必ず -m / --m35 オプションの方を先に記述して
+	下さい。
+
+-i / --int
+
+	　割り込みの使用状態を表示します。
+
+-s / --scsi
+
+	　SCSI に接続されている機器の情報を表示します。
+
+-v / --version
+
+	　このプログラムのバージョンを表示します。
+
+-l / --license
+
+	　このプログラムのバージョンと著作権を表示します。
+
+-? / -h / --help
+
+	　使用法を表示します。
+
+
+	　以下のオプションを指定した場合、表示は行なわずに終了コードを返します。
+	それより後に指定したオプションは評価されません。
+
+-f-ms
+
+	　メインメモリの実装容量をメガバイト単位で返します。
+
+-f-memf
+
+	　メインメモリの空き容量をキロバイト単位で返します。
+
+-f-cs
+
+	　クロックスイッチの状態を返します。XVI 及び Compact XVI では MPU クロ
+	ックを 10MHz と 16MHz に変更できますが、それ以外の X68000 では 10MHz、
+	X68030 では 25MHz に固定されています。
+
+	　X68030 でウェイトが入っている、クロックアップ改造が行われている、ア
+	クセラレータが装着されているなどの場合は正しく反映されないので、この機
+	能でマシンの速度を判定しようとしてはいけません。
+
+	返値		0	1	2	3	4	5	6
+	クロック	10MHz	16MHz	20MHz	25MHz	33MHz	40MHz	50MHz
+
+-f-fpu
+
+	　FPU/FPCP が装着されているかどうか、装着されているならその種類を返し
+	ます。複数の FPU が存在する場合、4 > 3 > 1 > 2 の順に優先されます。
+
+	返値	0	1		2		3	 4
+	FPU	なし	I/O 接続(ID=0)	I/O 接続(ID=1)	MPU 直結 MPU 内蔵
+
+-f-mpu
+
+	　MPU の種類を返します。
+
+	返値	0	1	2	3	4	6
+	MPU	68000	68010	68020	68030	68040	68060
+
+-f-mmu
+
+	　MMU が装着されているかどうかを返します。装着(または MPU に内蔵)され
+	ている場合は 1、そうでない場合は 0 を返します。
+
+-f-midi
+
+	　MIDI ボードが装着されているかどうかを返します。RS-MIDI には対応して
+	いません。
+
+	返値	0	1	2	3
+	MIDI	なし	ID=0	ID=1	ID=0 及び ID=1
+
+-f-merc
+
+	　Mercury-Unit が装着されているかどうか、装着されているならそのバージ
+	ョンを返します。
+
+	返値	バージョン
+	----	----------
+	0	なし
+	1	Mercury-Unit V3.5 以下
+	2	MK-MU1
+	3	MK-MU1O
+
+	　-m / --m35 オプションを併用した場合、V3.1 以下と V3.5 の判別が
+	行われ、返値は以下のようになります。
+
+	返値	バージョン
+	----	----------
+	0	なし
+	1	Mercury-Unit V3.1 以下
+	2	MK-MU1
+	3	MK-MU1O
+	4	Mercury-Unit V3.5
+
+-f-emu
+
+	　Si がエミュレータ上で実行されているかどうか、エミュレータ上であれば
+	その種類を返します。
+
+	返値	種類
+	----	----
+	0	実機
+	1	EX68
+	2	WinX68k
+	3	WinX68030
+	4	XM6
+	5	(予約)
+	6	WinX68k S.E.
+	7	WinX68k C.E.
+
+
+☆ 表示内容
+
+System Information
+
+	　実行した Si 自身のバージョンを表示します。
+
+	　Si の動作報告をされる場合は、必ずこの行または si -v の出力を含めて下
+	さい。
+
+	○この項目は常に表示されます。
+
+emulator
+	　エミュレータ上での実行時に、エミュレータの名称を表示します。可能であ
+	ればバージョンも表示します。
+
+	○この項目はエミュレータ上での実行時に表示されます。
+	　(ただし -a、--all 指定時には常に表示されます。以下同じ)
+
+host computer
+
+	　X680x0 の機種を表示します。環境変数 HOSTNAME が設定されている場合は
+	その値も表示します。
+
+	　アクセラレータは 060turbo、040turbo、JUPITER-X、Xellent30(s|PRO)、
+	040Excel、060Excel に対応しています。ただし、68030 モードでの 040turbo
+	や、68000 モードでの JUPITER-X・040Excel・060Excel は認識できません。
+	また、Xellent30PRO は Xellent30s と表示されます。
+
+	　一部の機種は判別することが出来ません。以下の一覧で同じ行に並んでいる
+	ものがそれに該当します。HD 内蔵モデルかどうかは判別しません。
+
+	X68000(初代)
+	X68000 ACE、X68000 PRO(II)、X68000 EXPERT(II)
+	X68000 SUPER
+	X68000 XVI
+	X68000 Compact XVI
+	X68030、X68030 Compact
+	EX68
+	WinX68k、WinX68k高速版
+	WinX68030
+	XM6
+
+	　なお、JUPITER-X と 040Excel/060Excel の判別が正しく動作するかは未確
+	認です(JUPITER-X が仕様通り設計・実装されていれば問題ない筈です)。
+
+	○この項目は常に表示されます。
+
+BIOS ROM
+
+	　IOCS ROM のバージョンと年月日を表示します。
+
+	○この項目は常に表示されます。
+
+clock switch
+
+	　クロックスイッチの状態を表示します。
+
+	○この項目は XVI 若しくは Compact XVI で実行した時だけ表示されます。
+
+micro processing unit
+
+	　MPU の種類と動作クロックを表示します。環境変数 MPUPACK が設定されて
+	いる場合は代わりにその値と動作クロックを表示します。
+
+	　68010 以下の MPU で XVI 以前の機種の場合、動作クロックの測定の為に一
+	時的に SRAM を書き換えて使用します。また、MPU の種類が IOCS ワークに正
+	しく設定されていない場合と、68020 以上の MPU で動作クロックが計測され
+	ていない場合は警告を表示します。
+
+	○この項目は常に表示されます。
+
+cache (instruct / data)
+cache (ss/bc/sb/i/d)
+
+	　MPU の内蔵キャッシュの状態を表示します。
+
+	　68020～68040 では (instruct / data)、68060 では (ss/bc/sb/i/d) が表
+	示されます。ss＝スーパースケーラ、bc＝ブランチキャッシュ、sb＝ストアバ
+	ッファ、i＝命令キャッシュ、d＝データキャッシュです。
+
+	○この項目は 68020 以上で表示されます。
+
+secondary cache
+
+	　二次キャッシュボード VENUS-X が装着されていれば、二次キャッシュの状
+	態とボードのリビジョンを表示します。
+
+	○この項目は VENUS-X 装着時に表示されます。
+
+memory management unit
+
+	　MMU が実装されていれば、その種類を表示します。
+
+	○この項目は MMU 実装時に表示されます。
+
+floating point unit
+
+	　FPU/FPCP が実装されていれば、その種類を表示します。環境変数 FPUPACK
+	が設定されている場合は代わりにその値を表示します。
+
+	　なお、ツクモ製の Compact XVI 専用メモリ増設・コプロセッサボードに搭
+	載されている 68882 は PLCC パッケージですが、判別が不可能なため PGA パ
+	ッケージとして表示されます。
+
+	○この項目は FPU/FPCP 実装時に表示されます。
+
+operating system
+
+	　OS(Human68k)のバージョンを表示します。
+
+	○この項目は常に表示されます。
+
+system patch driver
+
+	　アクセラレータ用などのドライバが組み込まれていれば、その種類とバージ
+	ョンを表示します。判別できるものは以下の通りです。
+
+	060turbo.sys
+	jupiter.x (JUPITER-X 専用版)
+	jupiter.x (040Excel/060Excel 専用版)
+	040sipl.x
+	040SYSpatch.x
+	040SRAMpatch.r
+	030SYSpatch.x
+	_30SYSpatch.x
+
+	○この項目はドライバ組み込み時に表示されます。
+
+fefunc driver
+
+	　浮動小数点演算パッケージの種類(浮動小数点のフォーマット及びプロセッ
+	サ)を表示します。
+
+	　FLOATn.X には数多くの不具合があり、特に古いバージョンで FPACK __IDIV
+	が正常動作しないことが頻繁に問題となります。そこで、同コールが正常動作
+	しない場合は警告を表示するようにしてあります。
+
+	○この項目は浮動小数点演算パッケージ組み込み時に表示されます。
+
+memory size
+
+	　メインメモリの実装容量と空き容量を表示します。
+
+	　switch.x の設定に関係なく実際の実装容量を表示します。空き容量は OS
+	で確保可能な最大サイズのメモリブロックの大きさです。
+
+	○この項目は常に表示されます。
+
+extention memory
+
+	　ハイメモリ(ローカルメモリ)の実装容量と空き容量を表示します。
+
+	　実装容量はハードウェアへのアクセスではなく、IOCS _SYS_STAT($4000)に
+	よって収得しています。但し、このファンクションコールを使用できない環境
+	の場合は 16MB と見なしています。空き容量は IOCS _HIMEM(3) の返値です。
+
+	○この項目はハイメモリ(ローカルメモリ)が存在し、IOCS _HIMEM が使用可能
+	　な時に表示されます。
+
+SRAM
+
+	　$ed0000 からの SRAM の実装容量と使用状況を表示します。48KB までの増
+	設(合計 64KB)に対応しています。
+
+	○この項目は常に表示されます。
+
+boot count
+
+	　本体の電源が入れられた回数を表示します。
+
+	○この項目は常に表示されます。
+
+boot device / switch
+
+	　起動したデバイスと、何によって電源が入れられたかを表示します。
+
+	○この項目は常に表示されます。
+
+SCSI
+
+	　認識できる SCSI を表示します。内蔵ポート、拡張 I/O ボード(CZ-6BS1、
+	SX-68SC、TS-6BSImkIII、Mach-2、mach2p)、SxSI を認識します。
+
+	○この項目は常に表示されます。
+
+elapsed time (H:M:S)
+
+	　起動してからの経過時間を表示します。
+
+	○この項目は常に表示されます。
+
+run time (day/H:M:S)
+
+	　現在までの累積稼働時間を表示します。
+
+	○この項目は常に表示されます。
+
+error count ADDRESS/BUS
+
+	　「あすかしすてむ」常駐時に、アドレスエラー/バスエラーの発生回数を表
+	示します。
+
+	○この項目はあすかしすてむが常駐している時に表示されますが、常駐してい
+	　なければ -a、--all を指定しても表示されません。
+
+printer
+
+	　プリンタへの出力が可能であれば online と表示されます。
+
+	○この項目はプリンタへの出力が可能な時に表示されます。
+
+optional board
+
+	　拡張 I/O ボードが装着されていれば、その名称、占有アドレス、ID 番号を
+	表示します。ID 番号はボードのアドレスを変更する設定であり、スロット番
+	号とは違うものなので気をつけて下さい。
+
+	　認識するボードは以下の通りです。
+
+	TS-6BGA
+	ispr16bitPCMBoard
+	CZ-6BS1 (SCSI ボード)
+	SX-68SC (SCSI ボード)
+	TS-6BSImkIII (SCSI ボード)
+	Mach-2
+	mach2p
+	FAX
+	MIDI
+	Parallel
+	RS-232C
+	Universal I/O
+	GP-IB
+	AWESOME-X
+	X68K-PPI
+	FineScanner-X68 (HGS-68) 制御ボード
+	BANK RAM BOARD
+	Mercury-Unit (～V3.1 / V3.5)
+	Mercury-Unit V4 MK-MU1
+	Mercury-Unit V4 MK-MU1O
+	Neptune-X、Neptune-Evolution(II)
+	Nereid
+	POLYPHON
+	PSX16550
+	PSX16750
+
+	　なお、TS-6BGA や TS-6BSImkIII は満開製作所から MK-GA1、MK-HA1 といっ
+	た型番でリバイバル版が出ていますが、名称が違うだけで同一のものなので判
+	別はしません。SHARP 製品の互換ボードについても同じです。
+
+	○この項目はボード装着時に表示されます。
+
+
+☆ パフォーマンス表示
+
+	　-p、--power 指定時には以上の項目は表示されません。また、-c、--cut 指
+	定時には以下の項目は表示されません。
+
+processor performance
+
+	　MPU の速度を計測します。一秒間にどの程度演算とメモリ参照が出来るかを
+	10MHz モード無負荷の X68000 XVI と比較しています。
+
+	　Timer-C 割り込みの設定が既定値から変更されている場合、正しい計測がで
+	きないことがあります。
+
+	○この項目は常に表示されます。
+
+system    performance
+
+	　割り込みを禁止した状態で I/Oのアクセス速度を計測します。一秒間に何回
+	RTC の一秒カウンタから読み込めるかを 10MHz モード無負荷の X68000 XVI
+	と比較しています。
+
+	　X68030 では I/O にウェイトが入る為、040turbo/060turbo であってもかな
+	り低い値になります。
+
+	○この項目は常に表示されます。
+
+machine   performance
+
+	　割り込みを許可した状態で I/O のアクセス速度を計測します。
+
+	　特に負荷のない状態では、Timer-C 割り込みの分、system performance よ
+	り数ポイント小さい値になります。
+
+	○この項目は常に表示されます。
+
+
+☆ 割り込み表示
+
+	　-i、--int 指定時には割り込み機能の情報が表示されます。
+
+	　enable であれば割り込みが許可されている状態、disable であれば禁止さ
+	れている状態です。また、(can hook) であれば IOCS によって割り込みを設
+	定でき、(cannot hook) であれば割り込みは設定できない状態(既に設定済み)
+	です。どちらの括弧も表示されていなければ、IOCS では設定できない割り込
+	みです。
+
+	　Spurious の項目だけは、スプリアス例外処理が rte だけになっているかど
+	うかを調べます。rte だけなら masked、そうでないなら not masked と表示
+	されます。
+
+
+☆ SCSI 機器表示
+
+	　-s、--scsi 指定時には SCSI に接続されている機器の情報が表示されます。
+
+	　ID 0～7(TWOSCSI 組み込み時には ID 0～15)を順に検索していき、機器が接
+	続されている ID か、本体(イニシエータ)の ID のみ、以下の情報を表示しま
+	す。
+
+Vendor Unique Parameter
+
+	　製品名など。X680x0 本体の場合は末尾に IOCS _S_LEVEL の返値が表示され
+	ます。
+
+	○この項目は常に表示されます。
+
+Peripheral Device Type
+
+	　物理デバイス種別。
+
+	○この項目は常に表示されます。
+
+ANSI-Approved Version
+
+	　対応している ANSI のバージョン。
+
+	○この項目はイニシエータ以外で表示されます。
+
+Medium Type
+
+	　着脱可能なメディアであるか及び、書き込み禁止であるか。
+
+	○この項目はどちらかの条件にあてはまる場合に表示されます。
+
+
+☆ 使用上の注意
+
+	　無保証です。各自の責任で使用して下さい。
+
+	　初期の ROM で MPU クロックを表示する時、SRAM の $ed00c0 から数バイト
+	を一時的に書き換えて使用しています。基本的には XVI と同じアルゴリズム
+	です。
+
+	　68020 以降の MPU なのに IOCS _SYS_STAT が使用できない環境や、同コー
+	ルが正しい返値を返さない環境では正常動作しません。
+
+	　エミュレータ上で Si を実行した場合、その結果は X680x0 上で Si を実行
+	した時のものとは異なり、あくまでもエミュレータによるエミュレーションの
+	結果となります。予期しない結果が得られた場合、Si の不具合を除き、その
+	原因はエミュレータの不具合若しくは仕様によるものです。
+
+	　なお、WinX68k Version 0.59、WinX68030 v0.02(共にそれ以前のバージョン)
+	では、一部の MPU 命令を正しく実行できず Si 自体の動作に支障があるので、
+	起動時にチェックして何もせず終了するようにしています。
+
+
+☆ コンパイルオプション
+
+	　make 時に以下のシンボルを定義することで機能を調整できます。
+
+ENABLE_DISABLE
+
+	　キャッシュの有効/無効を on/off ではなく enable/disable と表示します。
+
+SHUTDOWN_COUNT
+
+	　boot count の代わりに shutdown count を表示します。単に 1 小さい値が
+	表示されるだけです。
+
+
+☆ 許諾
+
+	　Si はフリーソフトウェアです。自由に配布していただいて結構ですが、配
+	布は無償で行って下さい。メディア代金等流通代金はこの限りではありません。
+
+	　転載等は自由ですが, 転載後のバージョンアップサポートをお願いします。
+
+	　無保証です。本プログラム使用に際して不具合が発生しても作者は一切責任
+	は無い物とします。
+
+
+☆ 著作権の扱いについて
+
+	　著作権は原作者「佐竹」氏、「BEL.」氏、「有須川せあら」氏、及び現在の
+	サポート担当者「立花＠桑島技研」が保有します。
+
+	　BEL. 氏は特に著作権を主張しないそうですが、佐竹氏の意向は不明です。
+	ただし、原著作者である佐竹氏の記述したコード自体が極めて少なくなって
+	いるので(一部の文字列程度)、問題はないと思います。
+
+	　私も著作権は放棄しません。著作者として以下の権利を主張します。
+
+	　ユーザは、作者及び他のユーザの不利益にならない限り、このソフトウェア
+	を自由に改変し、改変したものを公開してよいものとする。
+
+	　ただし、その場合コピーライトから原著作者の名前を削除しないこと。
+
+	　改変したものを公開する場合、改変したソースコードか、テキスト形式の差
+	分も公開すること。
+
+
+☆ 謝辞
+
+	　不安定なバージョンの頃から不都合の報告などをしていただいた方々に感謝
+	します。
+
+	　開発には以下のソフトウェアを使用しました。
+
+	Human68k version 3.02
+	060turbo.sys version 0.54+2
+	060dmam version 0.02
+	Console driver version 1.09c+13[em]
+	HIOCS PLUS version 16.13
+	FLOAT4.X version 1.02
+	FLOAT2.X version 2.03
+	SUSIE V1.21A+2
+	(V)TwentyOne.sys version 1.36c modified +14 patchlevel 9
+	RJJ Ver 0.22.0
+	INTERRUPT SWITCH DRIVER version 1.10
+	GRAD version 1.30 patchlevel 1
+	Hi-speed DSKF ver0.08+ patchlevel 1
+	lzd version 1.20
+	DCACHE v2.12
+	KeyWitch version 2.13 patchlevel 5
+	Graphic Mask version 0.87 patchlevel 3
+
+	Madoka INTerpreter version 3.00
+	MicroEMACS j1.43 (rel.5c7-beta4)
+	GNU Make version 3.79 human68k-1.2
+	HAS060 version 3.09+87+15
+	HLK evolution version 3.01+14
+	GNU diffutils version 2.7 human68k-1.3
+	Zip 2.3 human68k-1.2
+
+
+☆ 参考文献
+
+書籍
+	68000 プログラマーズ・ハンドブック		宍倉幸則,技術評論社
+	Inside X68000					桑野雅彦,SOFT BANK
+	Outside X68000					〃	,〃
+	X68030 Inside/Out				〃	,〃
+
+	MC68030 ユーザーズ・マニュアル			日本モトローラ
+
+ファイル
+	ぷにぐらま～ずまにゅある 第七版第二刷		立花えり子
+
+	XTDRV216.LZH (XT30DRV.X version 2.16)		E.Watanabe
+	CH30X211.LZH (ch30_omake.sys version 2.11)	〃
+	TWOSC055.LZH (TWOSCSI.x version 0.55)		TNB 製作所
+
+	UCRTECH.TXT (PSX16750 暫定技術資料 1997/08/25)	N.Higashino
+	PSXIO version 0.52				〃 / Project PSX
+	PSX UART Access Checker v1.1			Project PSX :-)
+
+	JUPITER.X version 0.79 ～ 0.82A1		yamapu
+	060turbo.sys version 0.54			鎌田誠,満開製作所
+	040sipl.x Version 1.16				BEEPs /
+							First Class Technology
+	040SYSpatch.x v2.77				BEEPs / じゃぎゅあ
+	040SRAMpatch.r v2.77.Z007			〃
+	030/_30SYSpatch.x v2.06				じゃぎゅあ
+
+	FALDRV.R v2.9					Falcom,ＰＩ．,Fu-.
+	MercuryUnit.make (V3)				nenetto
+	MercuryUnitV35.doc				まるむ
+	MercuryV4.doc					山内 千里
+
+	TS6BGAG V0.04A					GORRY.
+	EB.X version 0.07				Shi-MAD.
+	NDRV002S.LZH (Neptune-X board driver version 0.02) 〃
+
+	68060_07.txt (『６８０６０を斬る！！』第７回)	鎌田誠
+
+ROM
+	IOCS ROM version 1.00 (X68000 初代、1987/05/07 版)
+	IOCS ROM version 1.00 (X68000 ACE)
+	IOCS ROM version 1.00 (X68000 SUPER)
+	IOCS ROM version 1.10 (X68000 XVI)
+	IOCS ROM version 1.20 (X68000 Compact XVI)
+	IOCS ROM version 1.30 (X68030)
+	IOCS ROM version 1.50 (060turbo、1997/05/29 版)
+	TS-6BSImkIII
+
+(順不同、敬称略)
+
+
+☆ 連絡先
+
+TcbnErik / 立花@桑島技研
+  https://github.com/kg68k/si-ee
+
+
+
+[EOF]

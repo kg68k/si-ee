@@ -218,7 +218,7 @@ Accelerator_GetXellent30::
 
   ;AWESOME-Xが存在するなら #0-#2 は存在できない
   bsr Accelerator_AwesomexExists
-  beq 9f
+  bne 9f
     moveq #ACC_XELLENT30_S2,d1
     lea (xel2-xel3,a0),a0
     bsr getXt30

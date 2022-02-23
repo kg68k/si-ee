@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-02-22'
+DATE:		.reg	'2022-02-23'
 
 
 * Include File -------------------------------- *
@@ -795,7 +795,6 @@ print_romver:
 		bsr	print_romver_sub
 		move.b	#'.',(a0)+
 		bsr	print_romver_sub
-		move.b	#'0',(a0)+
 		move.b	#' ',(a0)+
 
 		move.b	#"(",(a0)+

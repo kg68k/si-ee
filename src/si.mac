@@ -41,6 +41,10 @@ HSYNC_VEC:    .equ $4f
 PRNREADY_VEC: .equ $63
 
 
+;680x0 Opcode
+MOVEAL_A0_A0: .equ $2048
+
+
 ;Ascii Code
 
 BS:  .equ $08

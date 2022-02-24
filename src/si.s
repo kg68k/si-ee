@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-02-23'
+DATE:		.reg	'2022-02-24'
 
 
 * Include File -------------------------------- *
@@ -3897,17 +3897,17 @@ count_processor_speed:
 
 		lea	(int_flag,a6),a0
 		moveq	#LOOP_CNT+1,d1
-**		.quad
-		.align	8
+
+* si-3.67 に合わせて _loop を $xxxxx8 に配置する。
+		.align	16,MOVEAL_A0_A0
 		moveq	#0,d0			;+0
 		move.b	d1,(a0)			;+2
 @@:		cmp.b	(a0),d1			;+4
 		beq	@b			;+6	割り込み発生まで待機
-* ループ先頭をロングワード境界に合わせること
-count_processor_speed_loop:
-		addq.l	#1,d0			;+0	 8clk
-		tst.b	(a0)			;+2	 8clk
-		bne	count_processor_speed_loop ;+4	10clk
+count_proc_sp_loop:
+		addq.l	#1,d0			;+8	 8clk
+		tst.b	(a0)			;+a	 8clk
+		bne	count_proc_sp_loop	;+c	10clk
 * 合計 26clk
 * (10MHz/100Hz*32)/26clk = 3200000clk/26clk = 123076
 
@@ -5237,7 +5237,10 @@ cr_and_lf:	.dc.b	CR,LF,0			;必ず CR + LF
 * Block Storage Section ----------------------- *
 
 		.bss
-		.even
+
+* si-3.67 に合わせて work_top を $xxxxx8 に配置する。
+		.align	16
+		.ds.b	8
 work_top:
 
 

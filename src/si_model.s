@@ -15,8 +15,8 @@ MODEL_UNIDENTIFIED:      .equ  0
 MODEL_UNIDENTIFIED_SASI: .equ  1  ;初代/ACE/EXPERT/PRO
 MODEL_UNIDENTIFIED_SCSI: .equ  2  ;SUPER/XVI/Compact
 MODEL_UNIDENTIFIED_XVI:  .equ  3  ;XVI/Compact
-MODEL_X68000:            .equ  4  ;初代(初期)
-MODEL_X68000_SERIES:     .equ  5  ;初代(後期)/ACE/EXPERT/PRO
+MODEL_X68000:            .equ  4  ;初代
+MODEL_X68000_SERIES:     .equ  5  ;ACE/EXPERT/PRO
 MODEL_PRO:               .equ  6  ;GetType が返すことはない
 MODEL_SUPER:             .equ  7
 MODEL_XVI:               .equ  8
@@ -163,8 +163,8 @@ getTypeSasi:
 
   cmpi.l #$10_870507,d1
   bne @f
-    ;cmpi #$41f9,($ff0c80)
-    ;beq 9f
+    cmpi #$41f9,($ff0c80)
+    beq 9f  ;X68000 初代(後期型)
 
     moveq #MODEL_X68000_SERIES,d0  ;ACE/EXPERT/PRO
     bra 9f

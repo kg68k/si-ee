@@ -259,7 +259,7 @@ ierb_save:	.ds.b	1
 imra_save:	.ds.b	1
 imrb_save:	.ds.b	1
 
-		.even
+		.quad
 rom_version:	.ds.l	1
 scsiex_type:	.ds	1
 
@@ -273,15 +273,13 @@ xt30_id3:	.ds.b	1
 atty_flag:	.ds.b	1
 
 		.even
-opt_flags:
 opt_all_flag:	.ds.b	1
 opt_cut_flag:	.ds.b	1
 opt_pow_flag:	.ds.b	1
 opt_iob_flag:	.ds.b	1
 opt_m35_flag:	.ds.b	1
-opt_flags_num:	.equ	$-opt_flags
 
-		.even
+		.quad
 sizeof_work_c:
 
 * 以下は初期化されないワーク
@@ -291,6 +289,7 @@ print_cnt:	.ds.l	1
 print_buf:	.ds.b	PRINT_BUF_SIZE
 		.even
 sram_save:	.ds.b	32			;これだけあれば足りる筈
+		.quad
 sizeof_work:
 
 
@@ -605,15 +604,13 @@ abort_job:
 * 初期化いろいろ ------------------------------ *
 
 init_misc:
-		move.l	a0,-(sp)
+		PUSH	d1/a0
 		lea	(a6),a0
-		moveq	#sizeof_work_c/2-1,d0
-@@:		clr	(a0)+			;ワーククリア
+		moveq	#0,d1
+		moveq	#sizeof_work_c/4-1,d0
+		.fail	(sizeof_work_c.mod.4)!=0
+@@:		move.l	d1,(a0)+		;ワーククリア
 		dbra	d0,@b
-
-		clr.l	(opt_flags,a6)
-		clr.b	(opt_flags+4,a6)
-		.fail	opt_flags_num.ne.5
 
 		bsr	get_mpu_type
 		move.b	d0,(mpu_type,a6)
@@ -633,7 +630,7 @@ init_misc:
 		bsr	Emulator_GetType
 		move.l	d0,(emu_ver_type,a6)
 
-		move.l	(sp)+,a0
+		POP	d1/a0
 		rts
 
 

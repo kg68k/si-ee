@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-02-24'
+DATE:		.reg	'2022-02-28'
 
 
 * Include File -------------------------------- *
@@ -254,14 +254,12 @@ reg_save:	.ds.l	2
 trap14_save:	.ds.l	1
 
 restore_prog:	.ds.l	1
-vec_save:	.ds.l	1
-int_flag:
 iera_save:	.ds.b	1
 ierb_save:	.ds.b	1
 imra_save:	.ds.b	1
 imrb_save:	.ds.b	1
 
-		.even
+		.quad
 rom_version:	.ds.l	1
 scsiex_type:	.ds	1
 
@@ -275,15 +273,13 @@ xt30_id3:	.ds.b	1
 atty_flag:	.ds.b	1
 
 		.even
-opt_flags:
 opt_all_flag:	.ds.b	1
 opt_cut_flag:	.ds.b	1
 opt_pow_flag:	.ds.b	1
 opt_iob_flag:	.ds.b	1
 opt_m35_flag:	.ds.b	1
-opt_flags_num:	.equ	$-opt_flags
 
-		.even
+		.quad
 sizeof_work_c:
 
 * 以下は初期化されないワーク
@@ -293,6 +289,7 @@ print_cnt:	.ds.l	1
 print_buf:	.ds.b	PRINT_BUF_SIZE
 		.even
 sram_save:	.ds.b	32			;これだけあれば足りる筈
+		.quad
 sizeof_work:
 
 
@@ -329,6 +326,92 @@ si_start:
 		bsr	init_misc
 		bsr	init_print_buf
 
+		bra	si_start2
+
+
+* プロセッサ速度計測ルーチン ------------------ *
+
+* バージョンによってキャッシュ効率の違いから計測値が変わらないように
+* プログラム先頭からのオフセットを si 3.67 と同じになるよう配置する。
+
+* vec_save	     -> $00xx58
+* int_flag	     -> $00xx5C
+* count_proc_sp_loop -> $00xx78
+
+* 速度計測
+* out	d0.l	ループ回数
+*	d1.l	10MHz無負荷時のループ回数
+
+LOOP_CNT:	.equ	32
+
+count_processor_speed:
+		PUSH	d2-d6/a0-a5
+
+		move.l	(TIMERC_VEC*4),(vec_save-work_top,a6)
+		lea	(count_proc_sp_restore,pc),a2
+		move.l	a2,(restore_prog,a6)	;復帰ルーチンを登録
+
+		bra.s	@f
+		.ds	3
+vec_save::	.ds.l	1
+int_flag::	.ds.b	1
+		.ds.b	3
+		.align	16			;調整OKならパディングなしになる
+		.ds	1
+@@:
+		lea	(count_processor_speed_int,pc),a0
+		move.l	a0,(TIMERC_VEC*4)	;Timer-C をフック
+
+		lea	(int_flag-work_top,a6),a0
+		moveq	#LOOP_CNT+1,d1
+
+		moveq	#0,d0			;+0
+		move.b	d1,(a0)			;+2
+@@:		cmp.b	(a0),d1			;+4
+		beq	@b			;+6	割り込み発生まで待機
+count_proc_sp_loop::
+		addq.l	#1,d0			;+8	 8clk
+		tst.b	(a0)			;+a	 8clk
+		bne	count_proc_sp_loop	;+c	10clk
+* 合計 26clk
+* (10MHz/100Hz*32)/26clk = 3200000clk/26clk = 123076
+
+		bsr	count_proc_sp_restore	;後始末
+
+*		move.l	#123076,d1		;理論値
+		move.l	#119422,d1		;実測値(-2.97%)
+		POP	d2-d6/a0-a5
+		rts
+
+
+* Timer-C を元に戻す
+* in	a6.l	work_top
+
+count_proc_sp_restore:
+		move.l	(vec_save-work_top,a6),(TIMERC_VEC*4)
+		clr.l	(restore_prog,a6)	;復帰ルーチンを削除
+		rts
+
+
+count_processor_speed_int:
+		move.l	a0,-(sp)
+		lea	(int_flag,pc),a0
+		subq.b	#1,(a0)
+		movea.l	(sp)+,a0
+	.ifdef	STD_PROC_SPEED
+		rte
+	.else
+		move.l	(vec_save,pc),-(sp)
+		rts				;標準の割り込み処理を呼び出す
+	.endif
+
+
+* ここより上のコードの長さを変更したら調整が必要。
+
+
+* 初期化 続き --------------------------------- *
+
+si_start2:
 		pea	(1,a2)
 		bsr	GetArgCharInit
 		addq.l	#4,sp
@@ -521,15 +604,13 @@ abort_job:
 * 初期化いろいろ ------------------------------ *
 
 init_misc:
-		move.l	a0,-(sp)
+		PUSH	d1/a0
 		lea	(a6),a0
-		moveq	#sizeof_work_c/2-1,d0
-@@:		clr	(a0)+			;ワーククリア
+		moveq	#0,d1
+		moveq	#sizeof_work_c/4-1,d0
+		.fail	(sizeof_work_c.mod.4)!=0
+@@:		move.l	d1,(a0)+		;ワーククリア
 		dbra	d0,@b
-
-		clr.l	(opt_flags,a6)
-		clr.b	(opt_flags+4,a6)
-		.fail	opt_flags_num.ne.5
 
 		bsr	get_mpu_type
 		move.b	d0,(mpu_type,a6)
@@ -549,7 +630,7 @@ init_misc:
 		bsr	Emulator_GetType
 		move.l	d0,(emu_ver_type,a6)
 
-		move.l	(sp)+,a0
+		POP	d1/a0
 		rts
 
 
@@ -1014,7 +1095,7 @@ count_sram_1ms_loop:
 @@:		move	(a0)+,(a1)+		;SRAM の内容を保存
 		dbra	d0,@b
 
-		move.l	(TIMERC_VEC*4),(vec_save,a6)
+		move.l	(TIMERC_VEC*4),(vec_save-work_top,a6)
 
 		lea	(MFP),a0
 		move.b	(~MFP_IERA,a0),(iera_save,a6)
@@ -1070,7 +1151,7 @@ count_sram_1ms_restore:
 		PUSH	d0/a0-a1
 		lea	(MFP),a0
 
-		move.l	(vec_save,a6),(TIMERC_VEC*4)
+		move.l	(vec_save-work_top,a6),(TIMERC_VEC*4)
 
 		andi.b	#$0f,(~MFP_TCDCR,a0)	;Timer-C の設定を元に戻す
 		move.b	#200,(~MFP_TCDR,a0)
@@ -3879,67 +3960,6 @@ print_processor_pfm:
 		lea	(percent_as,pc),a1
 		bra	print_performance
 
-* 速度計測
-* out	d0.l	ループ回数
-*	d1.l	10MHz無負荷時のループ回数
-
-LOOP_CNT:	.equ	32
-
-count_processor_speed:
-		PUSH	d2-d6/a0-a5
-
-		move.l	(TIMERC_VEC*4),(vec_save,a6)
-		lea	(count_proc_sp_restore,pc),a2
-		move.l	a2,(restore_prog,a6)	;復帰ルーチンを登録
-
-		lea	(count_processor_speed_int,pc),a0
-		move.l	a0,(TIMERC_VEC*4)	;Timer-C をフック
-
-		lea	(int_flag,a6),a0
-		moveq	#LOOP_CNT+1,d1
-
-* si-3.67 に合わせて _loop を $xxxxx8 に配置する。
-		.align	16,MOVEAL_A0_A0
-		moveq	#0,d0			;+0
-		move.b	d1,(a0)			;+2
-@@:		cmp.b	(a0),d1			;+4
-		beq	@b			;+6	割り込み発生まで待機
-count_proc_sp_loop:
-		addq.l	#1,d0			;+8	 8clk
-		tst.b	(a0)			;+a	 8clk
-		bne	count_proc_sp_loop	;+c	10clk
-* 合計 26clk
-* (10MHz/100Hz*32)/26clk = 3200000clk/26clk = 123076
-
-		bsr	count_proc_sp_restore	;後始末
-
-*		move.l	#123076,d1		;理論値
-		move.l	#119422,d1		;実測値(-2.97%)
-		POP	d2-d6/a0-a5
-		rts
-
-
-* Timer-C を元に戻す
-* in	a6.l	work_top
-
-count_proc_sp_restore:
-		move.l	(vec_save,a6),(TIMERC_VEC*4)
-		clr.l	(restore_prog,a6)	;復帰ルーチンを削除
-		rts
-
-
-count_processor_speed_int:
-		move.l	a0,-(sp)
-		lea	(work_top+int_flag,pc),a0
-		subq.b	#1,(a0)
-		movea.l	(sp)+,a0
-	.ifdef	STD_PROC_SPEED
-		rte
-	.else
-		move.l	(work_top+vec_save,pc),-(sp)
-		rts				;標準の割り込み処理を呼び出す
-	.endif
-
 
 *┌────────────────────────────────────────┐
 *│				プロセッサ＆I/O速度				   │
@@ -5237,10 +5257,7 @@ cr_and_lf:	.dc.b	CR,LF,0			;必ず CR + LF
 * Block Storage Section ----------------------- *
 
 		.bss
-
-* si-3.67 に合わせて work_top を $xxxxx8 に配置する。
-		.align	16
-		.ds.b	8
+		.quad
 work_top:
 
 

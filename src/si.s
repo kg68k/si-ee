@@ -2469,12 +2469,11 @@ print_bootinf_sram:
 		bsr	is_exist_sxsi
 		subq.l	#2,d0
 		beq	print_bootinf_sxsi	;SxSI から起動
-	.ifdef	_S_TW_CHK
+
 		moveq	#8,d0
 		bsr	is_exist_sxsi
 		subq.l	#2,d0
 		beq	print_bootinf_sxsi	;〃
-	.endif
 
 		move.l	d1,d0			;起動アドレス
 		lea	(boot_sram,pc),a1
@@ -2556,12 +2555,11 @@ print_scsi:
 		bsr	is_exist_sxsi
 		lea	(scsi_sxsi,pc),a1
 		bsr	print_scsi_sub
-	.ifdef	_S_TW_CHK
+
 		moveq	#8,d0
 		bsr	is_exist_sxsi
 **		lea	(scsi_sxsi,pc),a1
 		bsr	print_scsi_sub
-	.endif
 
 		bsr	is_exist_builtin_scsi
 		lea	(boot_scsiin,pc),a1
@@ -2696,7 +2694,6 @@ is_exist_sxsi:
 		bsr	get_scsi_iocs_level0
 		bmi	is_exist_sxsi_false
 
-	.ifdef	_S_TW_CHK
 		TWOSCSI	_S_TW_CHK
 		addq.l	#2,d0
 		bne	@f
@@ -2708,7 +2705,6 @@ is_exist_sxsi:
 		andi.l	#$ffff,d0
 		bra	is_exist_sxsi_check
 @@:
-	.endif
 		moveq	#8,d1
 		cmp.l	d1,d4
 		bcc	is_exist_sxsi_false	;2nd-port は無い
@@ -4566,27 +4562,23 @@ print_scsi_info:
 		bsr	print_crlf
 
 		moveq	#8-1,d5
-	.ifdef	_S_TW_CHK
 		TWOSCSI	_S_TW_CHK
 		addq.l	#2,d0
 		bne	@f
 		moveq	#.not.(16-1),d5
 		not	d5			;TWOSCSI あり
 @@:
-	.endif
 		moveq	#0,d4
 print_scsi_info_loop:
 		lea	(~scsi_strbuf,sp),a0
 		lea	(scsi_vendor+2,pc),a1
 		move	#'0 ',(a1)
 		add.b	d4,(a1)			;ID 番号をセット
-	.ifdef	_S_TW_CHK
 		cmpi	#10,d4
 		bcs	@f
 		move	#'10'-10,(a1)		;二桁で表示
 		add	d4,(a1)
 @@:
-	.endif
 		subq.l	#2,a1
 		STRCPY	a1,a0,-1
 
@@ -4710,7 +4702,6 @@ scsi_info_vendor:
 		lea	(_sxsi,pc),a1
 		bne	scsi_info_type
 
-	.ifdef	_S_TW_CHK
 		moveq	#1<<3,d0
 		and.b	(SRAM_SCSI_ID),d0	;d0.b=0 なら SCSIIN
 		tst.l	d5
@@ -4721,7 +4712,6 @@ scsi_info_vendor:
 		move	d0,d7			;レベル
 		swap	d0			;bit0=0 なら SCSIIN
 @@:
-	.endif
 		lea	(_scsiin,pc),a1
 		tst.b	d0
 		beq	scsi_info_type		;SCSIIN
@@ -4785,7 +4775,6 @@ get_scsi_iocs_level:
 		addq.l	#6,sp
 		move.l	d0,(trap14_save,a6)
 
-	.ifdef	_S_TW_CHK
 		TWOSCSI	_S_TW_CHK
 		addq.l	#2,d0
 		bne	@f
@@ -4794,7 +4783,6 @@ get_scsi_iocs_level:
 		andi.l	#$ffff,d0
 		bra	get_scsi_lvl_end
 @@:
-	.endif
 		moveq	#8,d0
 		cmp.l	d0,d4
 		bcc	get_scsi_lvl_error	;2nd-port は無い

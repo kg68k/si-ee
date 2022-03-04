@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-02-28'
+DATE:		.reg	'2022-03-04'
 
 
 * Include File -------------------------------- *
@@ -46,6 +46,13 @@ DATE:		.reg	'2022-02-28'
 		.xref	Accelerator_GetTypes
 		.xref	Accelerator_AwesomexExists
 		.xref	Accelerator_ToString
+* si_scsiex.s
+		.xref	Scsiex_GetType
+		.xref	Scsiex_ToString
+		.xref	Scsiex_hasRomName
+		.xref	Scsiex_GetRomName
+		.xref	SCSIEX_UNKNOWN,SCSIEX_TS6BS1MK3
+		.xref	SCSIEX_MACH2,SCSIEX_MACH2P
 
 
 * Fixed Number -------------------------------- *
@@ -228,9 +235,6 @@ SRAM_END:	.equ	$ed3fff
 SRAM_MAX:	.equ	$edffff
 
 SCSIEX_ROM:	.equ	$ea0020
-SCSIEX_ID:	.equ	$ea0044			;'SCSIEX'
-MACH2_ID:	.equ	$ea00dc			;'h-2 ' / 'h2p '
-SX68SC_ID:	.equ	$ea0072			;'SACO'
 
 SCSIROM:	.equ	$fc0000
 SCSIIN_ID:	.equ	$fc0024			;'SCSIIN'
@@ -261,11 +265,13 @@ imrb_save:	.ds.b	1
 
 		.quad
 rom_version:	.ds.l	1
-scsiex_type:	.ds	1
 
 emu_ver_type:
 emu_ver:	.ds	1
 emu_type:	.ds	1
+
+has_scsiex_type:.ds.b	1
+scsiex_type:	.ds.b	1
 
 mpu_type:	.ds.b	1
 fpu_exist:	.ds.b	1
@@ -619,9 +625,6 @@ init_misc:
 
 		IOCS	_ROMVER
 		move.l	d0,(rom_version,a6)
-
-		bsr	get_scsiex_type
-		move	d0,(scsiex_type,a6)
 
 		lea	(XT30_IO3+$100),a0	;$ecc100.w
 		bsr	check_bus_error_word
@@ -2491,8 +2494,9 @@ print_bootinf_scsiin:
 		lea	(boot_scsiin,pc),a1
 		bra	@f
 print_bootinf_scsiex:
-		bsr	get_scsiex_name
-		bra	@f
+		bsr	get_scsiex_type
+		bsr	Scsiex_ToString
+		bra	print_bootinf_switch
 print_bootinf_sasi:
 		lea	(boot_sasi,pc),a1
 		bra	@f
@@ -2525,7 +2529,6 @@ print_bootinf_switch:
 boot_title:	.dc.b	'boot device / switch	:	',0
 boot_rom:	.dc.b	'ROM $',0
 boot_scsiin:	.dc.b	'SCSIIN',0
-boot_scsiex:	.dc.b	'SCSIEX',0
 boot_sasi:	.dc.b	'SASI',0
 boot_sxsi:	.dc.b	'SxSI ('		;'SxSI (SRAM $xxxxxxxx)'
 boot_sram:	.dc.b	'SRAM $',0
@@ -2564,12 +2567,17 @@ print_scsi:
 		lea	(boot_scsiin,pc),a1
 		bsr	print_scsi_sub
 
-		bsr	get_scsiex_name
+		bsr	get_scsiex_type
+		move.l	d0,d1
 		beq	print_scsi_no_ex	;SCSI ボードなし
 
-		bsr	print_scsi_sub2
-		subq	#SCSI_MACH2,d0
-		bcs	@f
+		bsr	tas_d7_strcpy_slash
+		bsr	Scsiex_ToString
+
+		move.l	d1,d0
+		bsr	is_mach2_series
+		bne	@f
+
 		moveq	#.not.(1<<3),d0
 		or.b	(SRAM_SCSI_ID),d0	;SCSIIN 起動: 2nd-port が SCSIEX
 		not.l	d0			;SCSIEX  〃 : 1st-port	〃
@@ -2596,33 +2604,22 @@ print_scsi_end:
 		rts
 
 
-* SCSI ボードの種類と名称を収得する
-* out	d0.w	0:なし 2:CZ-6BS1 4:SX-68SC 6:TS-6BS1(mkIII)
-*		8:Mach-2 10:mach2p
-*	a1.l	ボード名文字列
-*	ccr	<tst.w d0> の結果
+is_mach2_series:
+		cmpi	#SCSIEX_MACH2,d0
+		beq	@f
+		cmpi	#SCSIEX_MACH2P,d0
+@@:		rts
 
-get_scsiex_name:
-		move	(scsiex_type,a6),d0
-		lea	(@f,pc,d0.w),a1
-		adda	(a1),a1
+tas_d7_strcpy_slash:
+		tas	d7
+		bne	strcpy_slash
 		rts
-@@:
-		.dc	boot_scsiex-$		;有り得ないが念の為(bootinf 用)
-		.dc	scsi_cz6bs1-$
-		.dc	scsi_sx68sc-$
-		.dc	scsi_ts6bsi-$
-		.dc	scsi_mach2-$
-		.dc	scsi_mach2p-$
-
 
 print_scsi_sub:
 		tst.l	d0
 		beq	print_scsi_sub_end
 print_scsi_sub2:
-		tas	d7
-		beq	@f
-		bsr	strcpy_slash
+		bsr	tas_d7_strcpy_slash
 @@:
 		STRCPY	a1,a0,-1
 print_scsi_sub_end:
@@ -2672,72 +2669,19 @@ is_exist_scsiin_false:
 
 
 * SCSI ボードの種類を調べる.
-* out	d0.l	0:なし 2:CZ-6BS1 4:SX-68SC 6:TS-6BS1(mkIII)
-*		8:Mach-2 10:mach2p
-
-SCSI_NON:	.equ	0
-SCSI_CZ6BS1:	.equ	2
-SCSI_SX68SC:	.equ	4
-SCSI_TS6BSI:	.equ	6
-SCSI_MACH2:	.equ	8
-SCSI_MACH2P:	.equ	10
+* out	d0.l	si_scsiex.s 参照のこと
 
 get_scsiex_type:
-		PUSH	d1-d2/a0-a1
-
-		lea	(MACH2_ID),a0
-		bsr	check_bus_error_long	;Mach-2/mach2p の識別子を調べる
+		tas	(has_scsiex_type,a6)
 		bne	@f
-		moveq	#SCSI_MACH2,d1
-		cmpi.l	#'h-2 ',d0
-		beq	get_scsiex_type_end	;Mach-2 有り
-		moveq	#SCSI_MACH2P,d1
-		cmpi.l	#'h2p ',d0
-		beq	get_scsiex_type_end	;mach2p 有り
-@@:
-		lea	(SCSIEX_ID-MACH2_ID,a0),a0
-		bsr	check_bus_error_long	;識別子 'SCSIEX' を調べる
-		bne	get_scsiex_type_non
-		cmpi.l	#'SCSI',d0
-		bne	get_scsiex_type_non
-		addq.l	#4,a0
-		bsr	check_bus_error_word
-		bne	get_scsiex_type_non
-		cmpi	#'EX',d0
-		bne	get_scsiex_type_non	;SCSI ボード無し
 
-		moveq	#SCSI_TS6BSI,d1
-		lea	($ea1640-(SCSIEX_ID+4),a0),a0
-		lea	(ts6bsi_data,pc),a1
-		moveq	#(ts6bsi_data_end-ts6bsi_data)/4-1,d2
-@@:
-		bsr	check_bus_error_long	;ROM の内容を比較する
-		adda.l	#4,a0
-		cmp.l	(a1)+,d0
-		dbne	d2,@b
-		beq	get_scsiex_type_end	;TS-6BS1mkIII 有り
-
-		lea	(SX68SC_ID),a0
-		bsr	check_bus_error_long	;識別子 'SACO' を調べる
-		bne	@f
-		moveq	#SCSI_SX68SC,d1
-		cmpi.l	#'SACO',d0
-		beq	get_scsiex_type_end	;SX-68SC 有り
-@@:
-		moveq	#SCSI_CZ6BS1,d1		;CZ-6BS1 有り
-get_scsiex_type_end:
-		move.l	d1,d0
-@@:		POP	d1-d2/a0-a1
+		bsr	Scsiex_GetType
+		move.b	d0,(scsiex_type,a6)
 		rts
-get_scsiex_type_non:
-		moveq	#SCSI_NON,d0
-		bra	@b
-
-* TS-6BS1mkIII の $ea1640～ の内容.
-ts6bsi_data:
-		.dc.l	$4e7a0002,$807c0808,$4e7b0002,$c07cf7f7
-		.dc.l	$4e7b0002,$4cdf0301,$4e750000,$ffff0000
-ts6bsi_data_end:
+@@:
+		moveq	#0,d0
+		move.b	(scsiex_type,a6),d0
+		rts
 
 
 * SxSI が存在するか調べる.
@@ -2802,11 +2746,6 @@ is_exist_sxsi_false:
 
 scsi_title:	.dc.b	'SCSI			:	',0
 scsi_sxsi:	.dc.b	'SxSI',0
-scsi_cz6bs1:	.dc.b	'CZ-6BS1',0
-scsi_sx68sc:	.dc.b	'SX-68SC',0
-scsi_ts6bsi:	.dc.b	'TS-6BS1mkIII',0
-scsi_mach2:	.dc.b	'Mach-2',0
-scsi_mach2p:	.dc.b	'mach2p',0
 		.even
 
 
@@ -3073,38 +3012,57 @@ print_iob_no_ts6bga:
 
 
 * SCSI ボード
-		lea	(a3),a2
-		bsr	get_scsiex_name
-		bne	@f
+		bsr	get_scsiex_type
+		move.l	d0,d1
+		cmpi	#SCSIEX_UNKNOWN,d1
+		bhi	@f
+		beq	print_iob_scsiex_end	;未知のデバイス
 
+* SCSIボードなし
 		lea	(TS6BSI_P_ID),a0
 		bsr	check_bus_error_byte
-		bne	print_iob_no_scsiex
+		bne	print_iob_scsiex_end
 
 		lea	(b_ts6bsi_p,pc),a1	;TS-6BS1mkIII のパラレルポート
-		bra	print_iob_scsiex_exist	;だけが存在する
+		bsr	print_iob_sub		;だけが存在する
+		bra	print_iob_scsiex_end
 @@:
-		subq	#SCSI_TS6BSI,d0
-		bne	@f
+* SCSIボードあり
+		cmpi	#SCSIEX_TS6BS1MK3,d1
+		beq	print_iob_ts6bs1mk3
 
+		move.l	d1,d0
+		bsr	is_mach2_series
+		lea	(b_mach2,pc),a1
+		beq	@f
+		lea	(b_scsiex,pc),a1
+@@:
+		lea	(a3),a0
+		STRCPY	a1,a0,-1
+		move.l	d1,d0
+		bsr	Scsiex_ToString
+
+		move.l	d1,d0
+		bsr	Scsiex_hasRomName
+		beq	@f
+
+		bsr	strcpy_slash
+		move.l	d1,d0
+		bsr	Scsiex_GetRomName
+@@:
+		lea	(a0),a2
+		bsr	print_iob_sub3
+		bra	print_iob_scsiex_end
+
+print_iob_ts6bs1mk3:
 		lea	(b_ts6bsi,pc),a1
 		lea	(TS6BSI_P_ID),a0
 		bsr	check_bus_error_byte
-		beq	print_iob_scsiex_exist
-
-		clr.b	(b_ts6bsi_1-b_ts6bsi,a1)
-		bra	print_iob_scsiex_exist	;SCSI ポートだけが存在する
+		beq	@f
+		clr.b	(b_ts6bsi_1-b_ts6bsi,a1)	;パラレルポートなし
 @@:
-		lea	(b_scsiex,pc),a0	;アドレス
-**		subq	#SCSI_MACH2,d0
-		bcs	@f
-		addq.b	#'2'-'0',(B_ADR0_1,a0)
-		addq.b	#'7'-'1',(B_ADR1_3,a0)
-@@:
-		STRCPY	a0,a2,-1
-print_iob_scsiex_exist:
-		bsr	print_iob_sub2		;a1=ボード名
-print_iob_no_scsiex:
+		bsr	print_iob_sub
+print_iob_scsiex_end:
 * a0 は破壊
 
 
@@ -3504,6 +3462,7 @@ print_iob_sub2:
 		move.l	a1,-(sp)
 		STRCPY	a1,a2,-1
 		movea.l	(sp)+,a1
+print_iob_sub3:
 		STRCPY_CRLF a2
 		moveq	#1,d6			;ボード有り
 		bra	print_stack_buffer
@@ -3808,6 +3767,7 @@ b_ts6bga:	.dc.b	'$e9e200 ～ $e9e3ff  TS-6BGA',CRLF,B_TAB
 b_ts6bga_1:	.dc.b	  'e0000 ～ $e'
 b_ts6bga_2:	.dc.b		     'effff  G-RAM bank (#0)',0
 
+b_mach2:	.dc.b	'$ea0020 ～ $ea7fff  ',0
 b_scsiex:	.dc.b	'$ea0000 ～ $ea1fff  ',0
 b_ts6bsi:	.dc.b	'$ea0000 ～ $ea1fef  TS-6BS1mkIII'
 b_ts6bsi_1:	.dc.b	CRLF,B_TAB		;二行目
@@ -4766,9 +4726,7 @@ scsi_info_vendor:
 		tst.b	d0
 		beq	scsi_info_type		;SCSIIN
 
-		move	(scsiex_type,a6),d0	;SCSIEX はボード名を表示
-		lea	(scsi_info_tbl,pc,d0.w),a1
-		adda	(a1),a1
+		bsr	get_scsiex_product	;SCSIEX はボード名を表示
 scsi_info_type:
 		STRCPY	a1,a0,-1
 
@@ -4796,13 +4754,18 @@ print_scsi_info_next:
 		lea	(sizeof_scsi_work,sp),sp
 		bra	flush_and_exit0
 
-scsi_info_tbl:
-		.dc	_scsiex-$
-		.dc	_cz6bs1-$
-		.dc	_sx68sc-$
-		.dc	_ts6bsi-$
-		.dc	_mach2-$
-		.dc	_mach2p-$
+
+* (SCSIボード名) を取得する。
+* out	a1.l	ボード名
+* 表示幅が7文字しかないので si 3.67 と同じ表示にする。
+
+get_scsiex_product:
+		bsr	get_scsiex_type
+		lea	(scsiex_product_tbl,pc),a1
+		move.b	(a1,d0.w),d0
+		adda	d0,a1
+		rts
+
 
 
 * SCSI IOCS のレベルを収得する.
@@ -4921,6 +4884,24 @@ scsi_ansi:	.dc.b	'      ANSI-Approved Version   : ',0
 scsi_media:	.dc.b	'      Medium Type             : ',0
 
 vendor_x68000:	.dc.b	'SHARP   X68000 ',0
+
+* Scsiex_GetType -> '(ボード名)' 変換テーブル
+scsiex_product_tbl:
+@@:		.dc.b	_scsiex-@b
+		.dc.b	_scsiex-@b
+		.dc.b	_scsiex-@b
+		.dc.b	_cz6bs1-@b
+		.dc.b	_sx68sc-@b
+		.dc.b	_ts6bsi-@b
+		.dc.b	_ts6bsi-@b
+		.dc.b	_ts6bsi-@b
+		.dc.b	_ts6bsi-@b
+		.dc.b	_mach2-@b
+		.dc.b	_mach2p-@b
+		.dc.b	_cz6bs1-@b
+		.dc.b	_cz6bs1-@b
+		.dc.b	_cz6bs1-@b
+
 _sxsi:		.dc.b	'(SxSI)   ',0
 _scsiin:	.dc.b	'(SCSIIN) ',0
 _scsiex:	.dc.b	'(SCSIEX) ',0

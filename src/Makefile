@@ -18,7 +18,7 @@ SIOPT	=
 #	  -sSHUTDOWN_COUNT
 
 
-SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s
+SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_scsiex.s
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x

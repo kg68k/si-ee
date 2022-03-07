@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-03-04'
+DATE:		.reg	'2022-03-08'
 
 
 * Include File -------------------------------- *
@@ -84,6 +84,9 @@ ROMVER_XVI:	.equ	$11_910111
 ROMVER_COMPACT:	.equ	$12_911024
 ROMVER_030:	.equ	$13_921127
 ROMVER_060T:	.equ	$15_970529		;日付違いあり
+
+ALMTINIT:	.equ	$9ca
+ALMTIMER:	.equ	$9cc
 
 
 	.ifndef	_HIMEM
@@ -581,8 +584,7 @@ board_only:
 		bne	skip_benchmark
 benchmark_only:
 		bsr	print_processor_pfm
-		bsr	print_system_pfm
-		bsr	print_machine_pfm
+		bsr	print_sys_mac_pfm
 skip_benchmark:
 flush_and_exit0:
 		clr	-(sp)
@@ -3907,12 +3909,11 @@ is_exist_psx16750_loop2:
 *└────────────────────────────────────────┘
 
 print_processor_pfm:
-		pea	(proc_title,pc)
-		bsr	print
-		addq.l	#4,sp
 		bsr	print_wait_message
-
 		bsr	count_processor_speed
+		bsr	delete_wait_message
+
+		lea	(proc_title,pc),a0
 		lea	(percent_as,pc),a1
 		bra	print_performance
 
@@ -3921,22 +3922,100 @@ print_processor_pfm:
 *│				プロセッサ＆I/O速度				   │
 *└────────────────────────────────────────┘
 
-print_system_pfm:
-		moveq	#-1,d7			;無負荷
-		pea	(syspfm_title,pc)
-		bra	@f
-print_machine_pfm:
-		moveq	#0,d7			;有負荷
-		pea	(machine_title,pc)
-@@:
+* 1秒間のループ回数を計測するが、開始と終了のタイミングを RTC の秒カウンタが
+* 変化してから再度変化するまでとしている。しかしこれでは、X680x0 本体の不調で
+* RTC が停止している場合に計測を始められず無限ループになってしまう。
+*
+* この対策として、Timer-C 割り込み処理でカウントダウンされる値で時間経過を監視
+* し、2秒間 RTC が変化しなければ計測を取りやめる。
+*
+* また、この手法で system performance と machine performance を別々に計測する
+* と、その間に必ず1秒の待機時間が生じてしまうため、まず machine ～ を計測して
+* 終了したらその場で直ちに system ～ の計測を開始することにより待機時間を削減
+* している。
+
+print_sys_mac_pfm:
+		bsr	print_wait_message
+		bsr	count_io_performance
+		bsr	delete_wait_message
+		tst.l	d0
+		bmi	print_sys_mac_pfm_err
+
+		lea	(syspfm_title,pc),a0
+		lea	(percent,pc),a1
+		exg	d0,d1
+		bsr	print_performance
+
+		lea	(machine_title,pc),a0
+		move.l	d2,d0
+		bra	print_performance
+**		rts
+
+print_sys_mac_pfm_err:
+		pea	(rtc_stall_mes,pc)
 		bsr	print
 		addq.l	#4,sp
-		bsr	print_wait_message
+		rts
 
-		bsr	count_system_speed
-		lea	(percent,pc),a1
+
+print_stderr:
+		move	#STDERR,-(sp)
+		move.l	a0,-(sp)
+		DOS	_FPUTS
+		addq.l	#6,sp
+		rts
+
+
+* "Wait..." を表示する
+print_wait_message:
+		tst.b	(atty_flag,a6)
+		beq	print_wait_mes_end
+
+		PUSH	d0-d2/a0
+		moveq	#-1,d1			;表示色保存
+		IOCS	_B_COLOR
+		move	d0,d2
+		moveq	#WAIT_COLOR,d1		;表示色設定
+		IOCS	_B_COLOR
+
+		lea	(wait_mes,pc),a0	;"Wait..."表示
+		bsr	print_stderr
+
+		move	d2,d1			;表示色復帰
+		IOCS	_B_COLOR
+		POP	d0-d2/a0
+print_wait_mes_end:
+		rts
+
+* "Wait..." の表示を取り消す
+* (文字自体は消えないが condrv のバックログからは削除される)
+delete_wait_message:
+		tst.b	(atty_flag,a6)
+		beq	@f
+
+		PUSH	d0/a0
+		lea	(del_wait_mes,pc),a0
+		bsr	print_stderr
+		POP	d0/a0
+@@:
+		rts
+
+
+* 計測結果を表示する
+* in	d0.l	計測値
+*	d1.l	基準値
+*	a0.l	タイトル
+*	a1.l	末尾に表示する文字列
 print_performance:
+		PUSH	d1-d7/a1
 		lea	(-256,sp),sp
+
+		move.l	d0,d7
+		move.l	a0,-(sp)
+		bsr	print
+		addq.l	#4,sp
+		move.l	d7,d0
+
 		lea	(sp),a0
 
 	.if	0
@@ -3999,65 +4078,89 @@ print_pfm_loop:
 
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
+		POP	d1-d7/a1
 		rts
+
 
 * 速度計測
-* in	d7.l	0:負荷あり(割り込み許可)で計測 -1:負荷なし(割り込み禁止)で計測
-* out	d0.l	ループ回数
-*	d1.l	10MHz無負荷時のループ回数
+* out	d0.l	負数:エラー それ以外:10MHz無負荷時のループ回数
+*	d1.l	無負荷時(割り込み禁止状態)のループ回数
+*	d2.l	有負荷時のループ回数
 
-count_system_speed:
-		PUSH	d2-d6/a0-a5
-		move	sr,d6
-		move	sr,d5
-		tst	d7
-		beq	@f
-		ori	#SR_I_MASK,d5
+		.offset	0
+~pfm_sr:	.ds	1
+~pfm_rtc_mode:	.ds.b	1
+		.quad
+sizeof_pfm_work:
+		.text
+
+PFM_MONITORING_PERIOD:	.equ	2*100	;2秒
+
+count_io_performance:
+		PUSH	d4-d7/a0-a2
+		link	a5,#-sizeof_pfm_work
+		move	sr,d7
+		move	d7,(~pfm_sr,a5)
+		ori	#SR_I_MASK,d7
+
+		lea	(RTC),a1
+		move.b	(~RTC_MODE,a1),(~pfm_rtc_mode,a5)
+		bsr	rtc_wait
+		move.b	#%1000,(~RTC_MODE,a1)	;bank 0
+		bsr	rtc_wait
+
+		moveq	#0,d1
+		moveq	#0,d2
+		lea	(~RTC_1SEC,a1),a0
+
+* カウンタ最大値($9ca.w) = 60*100
+* カウンタ現在地($9cc.w) = 最大値～1
+*   (割り込みごとに-1され、0になった瞬間に最大値に戻る)
+		lea	(ALMTIMER),a2
+		move	#-PFM_MONITORING_PERIOD,d6
+		move	(a2),d5
+		addq	#1,d5
+		cmpi	#PFM_MONITORING_PERIOD,d5
+		bcc	@f
+		add	(ALMTINIT),d6
 @@:
-		moveq	#0,d0
-		lea	(RTC),a5
-		move.b	(~RTC_MODE,a5),-(sp)
-		bsr	rtc_wait
-		move.b	#%1000,(~RTC_MODE,a5)	;bank 0
-		bsr	rtc_wait
+* 秒カウンタと同期をとる
+		move.b	(a0),d0
+@@:		cmp.b	(a0),d0
+		bne	@f
 
-		lea	(~RTC_1SEC,a5),a0
-		move.b	(a0),d1
-@@:		cmp.b	(a0),d1			;秒カウンタと同期をとる
-		beq	@b
-		move	d5,sr
+		move	(a2),d4
+		sub	d5,d4
+		cmp	d6,d4
+		bcc	@b		;まだ指定時間経っていない
 
-		move.b	(a0),d1
-@@:		addq.l	#1,d0
-		cmp.b	(a0),d1
-		beq	@b
+		moveq	#-1,d0		;RTCの秒カウンタが変化しなかった
+		bra	count_io_pfm_end
 
-		move	d6,sr
-		move.b	(sp)+,(~RTC_MODE,a5)
+		.align	16
+@@:
+* 割り込み許可で計測する
+		move.b	(a0),d0		;+0
+@@:		addq.l	#1,d2		;+2
+		cmp.b	(a0),d0		;+4
+		beq	@b		;+6
 
-		move.l	#351472,d1		;実測値
-		POP	d2-d6/a0-a5
-		rts
+* 割り込み禁止で計測する
+		move	d7,sr		;+8
+		bra.s	@f		;+a
+		.align	16		;+c +e
+@@:
+		move.b	(a0),d0		;+0
+@@:		addq.l	#1,d1		;+2
+		cmp.b	(a0),d0		;+4
+		beq	@b		;+6
 
-
-print_wait_message:
-		tst.b	(atty_flag,a6)
-		beq	print_wait_mes_end
-
-		moveq	#-1,d1			;表示色保存
-		IOCS	_B_COLOR
-		move	d0,-(sp)
-		moveq	#WAIT_COLOR,d1		;表示色設定
-		IOCS	_B_COLOR
-
-		move	#STDERR,-(sp)		;"Wait.."表示
-		pea	(wait_mes,pc)
-		DOS	_FPUTS
-		addq.l	#6,sp
-
-		move	(sp)+,d1		;表示色復帰
-		IOCS	_B_COLOR
-print_wait_mes_end:
+		move	(~pfm_sr,a5),sr
+		move.l	#351472,d0		;実測値
+count_io_pfm_end:
+		move.b	(~pfm_rtc_mode,a5),(~RTC_MODE,a1)
+		unlk	a5
+		POP	d4-d7/a0-a2
 		rts
 
 
@@ -4076,9 +4179,14 @@ machine_title:	.dc.b	'machine   performance	:	',0
 percent_as:	.dc.b	'% as compared with X68000 XVI 10MHz',CRLF,0
 percent:	.dc.b	'%',CRLF,0
 
-*wait_mes:	.dc.b	ESC,'[31mWait..',ESC,'[6D',ESC,'[33m',0
-*wait_mes:	.dc.b	ESC,'[31mWait..',BS,BS,BS,BS,BS,BS,ESC,'[33m',0
-wait_mes:	.dc.b	'Wait..',BS,BS,BS,BS,BS,BS,0
+wait_mes:	.dc.b	'Wait...',0
+
+del_wait_mes:	.dcb.b	7,BS
+		.dcb.b	7,' '
+		.dcb.b	7,BS
+		.dc.b	0
+
+rtc_stall_mes:	.dc.b	'RTCが停止しています。',CRLF,0
 		.even
 
 

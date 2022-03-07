@@ -281,12 +281,12 @@ fpu_exist:	.ds.b	1
 xt30_id3:	.ds.b	1
 atty_flag:	.ds.b	1
 
-		.even
 opt_all_flag:	.ds.b	1
 opt_cut_flag:	.ds.b	1
 opt_pow_flag:	.ds.b	1
 opt_iob_flag:	.ds.b	1
 opt_m35_flag:	.ds.b	1
+opt_exp_flag:	.ds.b	1
 
 		.quad
 sizeof_work_c:
@@ -449,6 +449,8 @@ option_loop:
 		beq	option_b
 		cmpi.b	#'c',d0
 		beq	option_c
+		cmpi.b	#'e',d0
+		beq	option_e
 		cmpi.b	#'h',d0
 		beq	print_long_help
 		cmpi.b	#'i',d0
@@ -477,6 +479,10 @@ option_b:	not.b	(opt_iob_flag,a6)
 
 option_cut:	moveq	#0,d0
 option_c:	not.b	(opt_cut_flag,a6)
+		bra	@f
+
+option_expose:	moveq	#0,d0
+option_e:	not.b	(opt_exp_flag,a6)
 		bra	@f
 
 option_m35:	moveq	#0,d0
@@ -1973,7 +1979,7 @@ print_sysp_no_040sipl:
 		bsr	print_float_sub		;version x.xx
 		move.b	#'.',(a0)+
 		move.l	(8,a2),d0		;リリース番号
-		bra	print_sysp_setrel	
+		bra	print_sysp_setrel
 
 print_sysp_no_040sp:
 		subq.b	#'4'-'3',(1,a1)
@@ -3661,6 +3667,26 @@ print_iob_ne_sub_end:
 * out	a2.l	〃
 print_iob_ne_mac:
 		PUSH	d0-d1/a0-a1
+		moveq	#' ',d0
+		move.b	d0,(a2)+
+		move.b	#'/',(a2)+
+		move.b	d0,(a2)+
+
+		tst.b	(opt_exp_flag,a6)
+		beq	@f
+
+		bsr	read_and_str_mac_addr	;-e,--expose 指定時のみ
+		bra	9f			;実データを表示する
+@@:
+		lea	(b_hidden_mac,pc),a1	;無指定なら伏せ字で表示する
+		STRCPY	a1,a2,-1
+9:
+		POP	d0-d1/a0-a1
+		rts
+
+
+* Neptune-X(及び互換ボード)からMACアドレスを読み込み、文字列化する
+read_and_str_mac_addr:
 		subq.l	#6,sp			;MAC アドレス読み込みバッファ
 
 		move.l	a0,d0
@@ -3684,11 +3710,6 @@ print_iob_ne_mac:
 		dbra	d1,@b
 		POP_SR
 
-		moveq	#' ',d0
-		move.b	d0,(a2)+
-		move.b	#'/',(a2)+
-		move.b	d0,(a2)+
-
 		lea	(sp),a1
 		lea	(a2),a0
 		moveq	#6-1,d1
@@ -3702,7 +3723,6 @@ print_iob_ne_mac:
 		lea	(a0),a2
 
 		addq.l	#6,sp
-		POP	d0-d1/a0-a1
 		rts
 
 
@@ -3793,6 +3813,7 @@ b_nere_bm_ef_1:	.dc.b	' 4096K Bytes',0
 B_NERE_LEN:	.equ	5			;バンクメモリ容量の桁数
 *b_nere_4m:	.dc.b	' 4096'
 b_nere_16m:	.dc.b	'16384'
+b_hidden_mac:	.dc.b	'**:**:**:**:**:**',0
 
 *b_venus:	.dc.b	'$ecf000 ～ $ecffff  VENUS-X',0
 b_bank:		.dc.b	'$ecffff ～ $ecffff  BANK RAM BOARD',0
@@ -5252,7 +5273,8 @@ option_f_table2:
 long_opt_table1:
 		.dc.b	'all',0			;長いオプションを追加した時は
 		.dc.b	'board',0		;LONG_OPT_MAX も変更すること
-		.dc.b	'cut',0	
+		.dc.b	'cut',0
+		.dc.b	'expose',0
 		.dc.b	'help',0
 		.dc.b	'int',0
 		.dc.b	'm35',0
@@ -5266,6 +5288,7 @@ long_opt_table2:
 		.dc	option_all-$
 		.dc	option_board-$
 		.dc	option_cut-$
+		.dc	option_expose-$
 		.dc	print_long_help-$
 		.dc	print_interrupt-$
 		.dc	option_m35-$
@@ -5297,7 +5320,7 @@ version_mes:
 		.dc.b	CRLF,0
 
 usage_mes:
-		.dc.b	'usage : si [-a,-c,-i,-m,-p,-s,'
+		.dc.b	'usage : si [-a,-c,-e,-i,-m,-p,-s,'
 		.dc.b		'-f-(cs,emu,fpu,memf,merc,midi,mmu,mpu,ms)]',CRLF
 		.dc.b	0
 
@@ -5306,6 +5329,7 @@ switch_mes:
 		.dc.b	'	-a  --all	all device',CRLF
 		.dc.b	'	-b  --board	I/O board only',CRLF
 		.dc.b	'	-c  --cut	cut benchmark',CRLF
+		.dc.b	'	-e  --expose	expose private data',CRLF
 		.dc.b	'	-i  --int	check interrupt',CRLF
 		.dc.b	'	-m  --m35	check Mercury-Unit v3.5',CRLF
 		.dc.b	'	-p  --power	benchmark only',CRLF

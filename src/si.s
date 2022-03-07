@@ -680,7 +680,6 @@ emu_check_exit:
 *┌────────────────────────────────────────┐
 *│			   System Information のバージョン			   │
 *└────────────────────────────────────────┘
-* 動作報告で正しいバージョンが通知されるように:-)
 
 print_si_version:
 		pea	(si_ver_mes,pc)
@@ -689,7 +688,7 @@ print_si_version:
 		rts
 
 
-si_ver_mes:	.dc.b	'System Information	:	Extended Edition version ',VERSION
+si_ver_mes:	.dc.b	'System Information	: Extended Edition version ',VERSION
 		.dc.b	' (',DATE,')'
 		.dc.b	CRLF,0
 		.even
@@ -720,7 +719,7 @@ print_emu_end:
 		rts
 
 
-emu_title:	.dc.b	'emulator		:	',0
+emu_title:	.dc.b	'emulator		: ',0
 		.even
 
 
@@ -861,7 +860,7 @@ is_exist_js_true:
 		rts
 
 
-host_title:	.dc.b	'host computer		:	',0
+host_title:	.dc.b	'host computer		: ',0
 _on_:		.dc.b	' on ',0
 env_hostname:	.dc.b	'HOSTNAME',0
 		.even
@@ -922,7 +921,7 @@ print_romver_sub:
 		rts
 
 
-romver_title:	.dc.b	'BIOS ROM		:	version ',0
+romver_title:	.dc.b	'BIOS ROM		: version ',0
 rom_movep_pat:	.dc.b	', movep patched',0
 		.even
 
@@ -966,7 +965,7 @@ print_clockswitch_end:
 clocksw_table:	.dc	'10','16','20','25','33','40','50'
 clocksw_mes:	.dc	'??'
 		.dc.b	'MHz mode',CRLF,0
-clocksw_title:	.dc.b	'clock switch		:	',0
+clocksw_title:	.dc.b	'clock switch		: ',0
 		.even
 
 
@@ -1203,7 +1202,7 @@ count_sram_1ms_int:
 		rte
 
 
-mpu_title:	.dc.b	'micro processing unit	:	',0
+mpu_title:	.dc.b	'micro processing unit	: ',0
 mpu_68000:	.dc.b	'68000',0
 mpu_68ec000:	.dc.b	'68EC000',0
 mpu_68lc000:	.dc.b	'68LC000',0
@@ -1245,7 +1244,7 @@ print_mpu_rev_skip:
 		rts
 
 
-mpu_rev_title:	.dc.b	'MPU ID / Revision	:	$',0
+mpu_rev_title:	.dc.b	'MPU ID / Revision	: $',0
 		.even
 
 
@@ -1399,8 +1398,8 @@ get_cache_stat_end:
 		rts
 
 
-cache_title:	.dc.b	'cache (instruct / data)	:	',0
-cache_title060:	.dc.b	'cache (ss/bc/sb/i/d)	:	',0
+cache_title:	.dc.b	'cache (instruct / data)	: ',0
+cache_title060:	.dc.b	'cache (ss/bc/sb/i/d)	: ',0
 without_cache:	.dc.b	'no cache',0
 no_data_cache:	.dc.b	'no data cache',0
 		.even
@@ -1480,7 +1479,7 @@ is_exist_vx_false:
 		bra	is_exist_vx_end
 
 
-cache2_title:	.dc.b	'secondary cache		:	',0
+cache2_title:	.dc.b	'secondary cache		: ',0
 cache2_vx:	.dc.b	' (VENUS-X for MC680'
 vx_mpu:		.dc.b			   '00, Revision.'
 vx_rev:		.dc.b					'0)',0
@@ -1522,7 +1521,7 @@ print_mmu_skip:
 		rts
 
 
-mmu_title:	.dc.b	'memory management unit	:	',0
+mmu_title:	.dc.b	'memory management unit	: ',0
 mmu_internal:	.dc.b	'on chip MMU',CRLF,0
 mmu_68851:	.dc.b	'68851',CRLF,0
 not_installed:	.dc.b	'not installed',CRLF,0
@@ -1841,7 +1840,7 @@ print_fpu_no_env:
 		rts
 
 
-fpu_title:	.dc.b	'floating point unit	:	',0
+fpu_title:	.dc.b	'floating point unit	: ',0
 fpu_onchip:	.dc.b	'on chip FPU',0
 fpu_enable:	.dc.b	' (enable)',0
 fpu_disable:	.dc.b	' (disable)',0
@@ -1885,7 +1884,7 @@ print_vernum:
 		rts
 
 
-vernum_title:	.dc.b	'operating system	:	Human68k version ',0
+vernum_title:	.dc.b	'operating system	: Human68k version ',0
 		.even
 
 
@@ -2031,7 +2030,7 @@ is_060turbo:
 		rts
 
 
-sysp_title:	.dc.b	'system patch driver	:	',0
+sysp_title:	.dc.b	'system patch driver	: ',0
 sysp_xt30drv:	.dc.b	'@XT30DRV'
 sysp_jupiter:	.dc.b	'jupiter.x',0
 sysp_060t:	.dc.b	'060turbo.sys',0
@@ -2111,7 +2110,7 @@ print_float_sub:
 		rts
 
 
-float_title:	.dc.b	'fefunc driver		:	',0
+float_title:	.dc.b	'fefunc driver		: ',0
 idiv_bug:	.dc.b	' (Warning: FPACK __IDIV returns wrong value)',0
 		.even
 
@@ -2318,8 +2317,8 @@ print_memsize_sub_end:
 		rts
 
 
-memsize_title:	.dc.b	'memory size		:	',0
-himem_title:	.dc.b	'extention memory	:	',0
+memsize_title:	.dc.b	'memory size		: ',0
+himem_title:	.dc.b	'extention memory	: ',0
 memsize_kb:	.dc.b	'K Bytes (',0
 memsize_kb_free:.dc.b	'K Bytes Free)',CRLF,0
 		.even
@@ -2381,7 +2380,7 @@ get_sram_size:
 		rts
 
 
-sram_title:	.dc.b	'SRAM			:	',0
+sram_title:	.dc.b	'SRAM			: ',0
 sramsize_kb:	.dc.b	'K Bytes / ',0
 sram_free:	.dc.b	'Free',CRLF,0
 sram_ramdisk:	.dc.b	'SRAMDISK',CRLF,0
@@ -2414,7 +2413,7 @@ print_boot_count:
 
 
 pow_on_title:
-		.dc.b	'boot count		:	',0
+		.dc.b	'boot count		: ',0
 		.even
 
 
@@ -2527,7 +2526,7 @@ print_bootinf_switch:
 		rts
 
 
-boot_title:	.dc.b	'boot device / switch	:	',0
+boot_title:	.dc.b	'boot device / switch	: ',0
 boot_rom:	.dc.b	'ROM $',0
 boot_scsiin:	.dc.b	'SCSIIN',0
 boot_sasi:	.dc.b	'SASI',0
@@ -2742,7 +2741,7 @@ is_exist_sxsi_false:
 		rts
 
 
-scsi_title:	.dc.b	'SCSI			:	',0
+scsi_title:	.dc.b	'SCSI			: ',0
 scsi_sxsi:	.dc.b	'SxSI',0
 		.even
 
@@ -2840,8 +2839,8 @@ dec2_to_str:
 		rts
 
 
-ontime_title:	.dc.b	'elapsed time (H:M:S)	:	',0
-runtime_title:	.dc.b	'run time (day/H:M:S)	:	',0
+ontime_title:	.dc.b	'elapsed time (H:M:S)	: ',0
+runtime_title:	.dc.b	'run time (day/H:M:S)	: ',0
 		.even
 
 
@@ -2872,7 +2871,7 @@ print_error_count_skip:
 		rts
 
 
-error_title:	.dc.b	'error count ADDRESS/BUS	:	',0
+error_title:	.dc.b	'error count ADDRESS/BUS	: ',0
 		.even
 
 
@@ -2901,7 +2900,7 @@ print_printer_skip:
 		rts
 
 
-printer_title:	.dc.b	'printer			:	',0
+printer_title:	.dc.b	'printer			: ',0
 online_mes:	.dc.b	'online',CRLF,0
 offline_mes:	.dc.b	'offline',CRLF,0
 		.even
@@ -3756,8 +3755,8 @@ b_mu_tbl:	.dc	b_mu_nul-b_mu_tbl	;MERC_V3
 		.dc	b_mk_mu1o-b_mu_tbl	;MERC_V4OPNA
 		.dc	b_mu_v35-b_mu_tbl	;MERC_V35
 
-board_title:	.dc.b	'optional board		:	',0
-B_TAB:		.reg	'			:	'
+board_title:	.dc.b	'optional board		: ',0
+B_TAB:		.reg	'			: '
 
 b_isprpcm:	.dc.b	'$e9e200 ～ $e9e3ff  ispr16bitPCMBoard',0
 b_ts6bga:	.dc.b	'$e9e200 ～ $e9e3ff  TS-6BGA',CRLF,B_TAB
@@ -4173,9 +4172,9 @@ rtc_wait:
 		rts
 
 
-proc_title:	.dc.b	'processor performance	:	',0
-syspfm_title:	.dc.b	'system    performance	:	',0
-machine_title:	.dc.b	'machine   performance	:	',0
+proc_title:	.dc.b	'processor performance	: ',0
+syspfm_title:	.dc.b	'system    performance	: ',0
+machine_title:	.dc.b	'machine   performance	: ',0
 percent_as:	.dc.b	'% as compared with X68000 XVI 10MHz',CRLF,0
 percent:	.dc.b	'%',CRLF,0
 

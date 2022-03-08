@@ -3813,7 +3813,7 @@ b_nere_bm_ef_1:	.dc.b	' 4096K Bytes',0
 B_NERE_LEN:	.equ	5			;バンクメモリ容量の桁数
 *b_nere_4m:	.dc.b	' 4096'
 b_nere_16m:	.dc.b	'16384'
-b_hidden_mac:	.dc.b	'**:**:**:**:**:**',0
+b_hidden_mac:	.dc.b	'(-e option to display MAC address)',0
 
 *b_venus:	.dc.b	'$ecf000 ～ $ecffff  VENUS-X',0
 b_bank:		.dc.b	'$ecffff ～ $ecffff  BANK RAM BOARD',0
@@ -5329,7 +5329,7 @@ switch_mes:
 		.dc.b	'	-a  --all	all device',CRLF
 		.dc.b	'	-b  --board	I/O board only',CRLF
 		.dc.b	'	-c  --cut	cut benchmark',CRLF
-		.dc.b	'	-e  --expose	expose private data',CRLF
+		.dc.b	'	-e  --expose	expose private data (MAC address)',CRLF
 		.dc.b	'	-i  --int	check interrupt',CRLF
 		.dc.b	'	-m  --m35	check Mercury-Unit v3.5',CRLF
 		.dc.b	'	-p  --power	benchmark only',CRLF

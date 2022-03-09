@@ -79,7 +79,7 @@ PRINT_BUF_SIZE:	.equ	 4*1024
 STACK_SIZE:	.equ	12*1024
 		.fail	STACK_SIZE<8192
 
-DATE_DELIM:	.equ	'-'			;'/' 日付の区切り記号
+DATE_DELIM:	.equ	'-'			;日付の区切り記号
 
 
 * IOCS Call ----------------------------------- *
@@ -231,6 +231,7 @@ JUPITER_SYSREG:	.equ	$01800003
 
 * SRAM/ROM Address ---------------------------- *
 
+SRAM:		.equ	$ed0000
 SRAM_ONTIME:	.equ	$ed0040
 SRAM_POWOFF:	.equ	$ed0044
 SRAM_SCSI_ID:	.equ	$ed0070
@@ -899,7 +900,7 @@ print_romver:
 		ror.l	#8,d0
 		bsr	print_romver_sub2	;西暦(4 桁)
 		bsr	print_romver_sub2
-		moveq	#DATE_DELIM,d2		;'/' or '-'
+		moveq	#DATE_DELIM,d2
 		move.b	d2,(a0)+
 		bsr	print_romver_sub2	;月
 		move.b	d2,(a0)+
@@ -2502,9 +2503,8 @@ print_bootinf_fdd:
 		STRCPY	a1,a0,-1
 
 print_bootinf_switch:
-	.irpc	char," / "
-		move.b	#'&char',(a0)+
-	.endm
+		bsr	strcpy_slash
+
 		move.b	(sp),d0			;最上位バイト=起動方法
 		addq.l	#4,sp
 		lea	(boot_power,pc),a1

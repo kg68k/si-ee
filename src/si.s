@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-03-08'
+DATE:		.reg	'2022-03-09'
 
 
 * Include File -------------------------------- *
@@ -53,6 +53,12 @@ DATE:		.reg	'2022-03-08'
 		.xref	Scsiex_GetRomName
 		.xref	SCSIEX_UNKNOWN,SCSIEX_TS6BS1MK3
 		.xref	SCSIEX_MACH2,SCSIEX_MACH2P
+* si_sram.s
+		.xref	Sram_GetSizeInKiB
+		.xref	Sram_GetUseMode
+		.xref	SramProgram_GetType
+		.xref	SramProgram_ToString
+		.xref	SRAM_U_PROGRAM
 
 
 * Fixed Number -------------------------------- *
@@ -225,16 +231,12 @@ JUPITER_SYSREG:	.equ	$01800003
 
 * SRAM/ROM Address ---------------------------- *
 
-SRAM:		.equ	$ed0000
-SRAM_USEMODE:	.equ	$ed002d
 SRAM_ONTIME:	.equ	$ed0040
 SRAM_POWOFF:	.equ	$ed0044
 SRAM_SCSI_ID:	.equ	$ed0070
 SRAM_ASKA_ID:	.equ	$ed00f4
 SRAM_ASKA_ADR:	.equ	$ed00f8
 SRAM_ASKA_BUS:	.equ	$ed00fc
-SRAM_PROG:	.equ	$ed0100
-SRAM_END:	.equ	$ed3fff
 SRAM_MAX:	.equ	$edffff
 
 SCSIEX_ROM:	.equ	$ea0020
@@ -2340,58 +2342,46 @@ print_sram:
 		lea	(sram_title,pc),a1
 		STRCPY	a1,a0,-1
 
-		bsr	get_sram_size
-
-		lsr.l	#8,d0
-		lsr.l	#2,d0			;÷1024
+		bsr	Sram_GetSizeInKiB
 		moveq	#MEMSIZE_LEN,d1
 		bsr	fe_iusing
 
 		lea	(sramsize_kb,pc),a1
 		STRCPY	a1,a0,-1
 
-		lea	(sram_free,pc),a1
-		move.b	(SRAM_USEMODE),d0
-		beq	@f
-		lea	(sram_ramdisk,pc),a1
-		subq.b	#2,d0
-		bcs	@f
-		lea	(sram_prog,pc),a1
-		beq	@f
-		lea	(sram_unknown,pc),a1
+		bsr	Sram_GetUseMode
+		cmpi	#SRAM_U_PROGRAM,d0
+		seq	d1
+		bls	@f
+		moveq	#SRAM_U_PROGRAM+1,d0
 @@:
-		STRCPY	a1,a0
+		lea	(sram_use_offs,pc,d0.w),a1
+		move.b	(a1),d0
+		adda	d0,a1
+		STRCPY	a1,a0,-1
 
+		tst.b	d1
+		beq	@f			;SRAM_U_PROGRAM ではなかった
+		bsr	SramProgram_GetType
+		beq	@f
+
+		bsr	strcpy_slash
+		bsr	SramProgram_ToString
+@@:
+		STRCPY_CRLF a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
 
 
-* SRAMメモリ実装容量を調べる.
-* out	d0.l	メモリ実装容量(バイト単位)
-
-get_sram_size:
-		move.l	a0,-(sp)
-		lea	(SRAM),a0
-@@:
-		bsr	check_bus_error_long
-		bne	@f
-		lea	(1024,a0),a0
-		cmpa.l	#SRAM_MAX+1,a0
-		bcs	@b
-@@:
-		suba.l	#SRAM,a0
-		move.l	a0,d0
-		movea.l	(sp)+,a0
-		rts
-
-
 sram_title:	.dc.b	'SRAM			: ',0
 sramsize_kb:	.dc.b	'K Bytes / ',0
-sram_free:	.dc.b	'Free',CRLF,0
-sram_ramdisk:	.dc.b	'SRAMDISK',CRLF,0
-sram_prog:	.dc.b	'Program',CRLF,0
-sram_unknown:	.dc.b	'???',CRLF,0
+
+sram_use_offs:	.dc.b	sram_free-$,sram_ramdisk-$,sram_prog-$,sram_unknown-$
+sram_free:	.dc.b	'Free',0
+sram_ramdisk:	.dc.b	'SRAMDISK',0
+sram_prog:	.dc.b	'Program',0
+sram_unknown:	.dc.b	'???',0
 		.even
 
 

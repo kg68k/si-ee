@@ -52,12 +52,6 @@ LF:  .equ $0a
 CR:  .equ $0d
 ESC: .equ $1b
 
-.ifdef __CRLF__
-  CRLF: .reg CR,LF
-.else
-  CRLF: .reg LF
-.endif
-
 
 ;X680x0 IOCS Work
 
@@ -107,10 +101,7 @@ STRCPY: .macro src,dst,rewind
   .endif
 .endm
 
-STRCPY_CRLF: .macro dst
-  .ifdef __CRLF__
-    move.b #CR,(dst)+
-  .endif
+STRCPY_EOL: .macro dst
   move.b #LF,(dst)+
   clr.b (dst)
 .endm

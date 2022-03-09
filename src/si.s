@@ -2,7 +2,7 @@
 
 
 VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-03-09'
+DATE:		.reg	'2022-03-10'
 
 
 * Include File -------------------------------- *
@@ -699,7 +699,7 @@ print_si_version:
 
 si_ver_mes:	.dc.b	'System Information	: Extended Edition version ',VERSION
 		.dc.b	' (',DATE,')'
-		.dc.b	CRLF,0
+		.dc.b	LF,0
 		.even
 
 
@@ -721,7 +721,7 @@ print_emulator:
 		move.l	(emu_ver_type,a6),d0
 		bsr	Emulator_ToString
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 print_emu_end:
@@ -776,7 +776,7 @@ print_host_no_acc:
 @@:
 		bsr	get_hostname
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(512,sp),sp
 		rts
@@ -914,7 +914,7 @@ print_romver:
 		STRCPY	a1,a0,-1
 @@:
 		move.b	#')',(a0)+
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
@@ -973,7 +973,7 @@ print_clockswitch_end:
 
 clocksw_table:	.dc	'10','16','20','25','33','40','50'
 clocksw_mes:	.dc	'??'
-		.dc.b	'MHz mode',CRLF,0
+		.dc.b	'MHz mode',LF,0
 clocksw_title:	.dc.b	'clock switch		: ',0
 		.even
 
@@ -1074,7 +1074,7 @@ print_mpu_clock_print:
 		lea	(romcnt_bug,pc),a1	;IOCS ワークに MPU 速度が設定されて
 		STRCPY	a1,a0,-1		;いなかったら警告を表示する
 @@:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(512,sp),sp
 		rts
@@ -1246,7 +1246,7 @@ print_mpu_rev:
 		swap	d0
 		bsr	hexstr_byte		;bit 15-8:Revision Number
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 print_mpu_rev_skip:
 		lea	(256,sp),sp
@@ -1326,7 +1326,7 @@ print_cache_nothing:
 print_cache_over:
 		STRCPY	a1,a0,-1
 print_cache_over2:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 print_cache_skip:
 		lea	(256,sp),sp
@@ -1439,7 +1439,7 @@ print_2nd_cache:
 		add.b	d2,(vx_mpu-cache2_vx,a1)
 print_cache_last:
 		STRCPY	a1,a0,-1
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 print_2nd_cache_skip:
 		lea	(256,sp),sp
@@ -1531,9 +1531,9 @@ print_mmu_skip:
 
 
 mmu_title:	.dc.b	'memory management unit	: ',0
-mmu_internal:	.dc.b	'on chip MMU',CRLF,0
-mmu_68851:	.dc.b	'68851',CRLF,0
-not_installed:	.dc.b	'not installed',CRLF,0
+mmu_internal:	.dc.b	'on chip MMU',LF,0
+mmu_68851:	.dc.b	'68851',LF,0
+not_installed:	.dc.b	'not installed',LF,0
 		.even
 
 
@@ -1608,7 +1608,7 @@ print_fpu_io2:
 
 print_fpu_io_done:
 print_fpu_end:
-		lea	(crlf,pc),a1
+		lea	(lf,pc),a1
 print_fpu_end2:
 		STRCPY	a1,a0
 		bsr	print_stack_buffer
@@ -1887,7 +1887,7 @@ print_vernum:
 		move.b	#'0',(a0)+		;$0302 -> "3.02"
 @@:		bsr	decstr
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
@@ -2004,7 +2004,7 @@ print_sysp_setrel:
 		beq	@f
 		STRCPY	a3,a0,-1
 @@:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 print_sysp_print:
 		bsr	print_stack_buffer
 print_sysp_end:
@@ -2097,7 +2097,7 @@ print_float_exist:
 		lea	(idiv_bug,pc),a1
 		STRCPY	a1,a0,-1
 @@:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 print_float_last:
 		bsr	print_stack_buffer
 print_float_skip:
@@ -2329,7 +2329,7 @@ print_memsize_sub_end:
 memsize_title:	.dc.b	'memory size		: ',0
 himem_title:	.dc.b	'extention memory	: ',0
 memsize_kb:	.dc.b	'K Bytes (',0
-memsize_kb_free:.dc.b	'K Bytes Free)',CRLF,0
+memsize_kb_free:.dc.b	'K Bytes Free)',LF,0
 		.even
 
 
@@ -2369,7 +2369,7 @@ print_sram:
 		bsr	strcpy_slash
 		bsr	SramProgram_ToString
 @@:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
@@ -2403,7 +2403,7 @@ print_boot_count:
 **@@:
 		bsr	decstr
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
@@ -2529,10 +2529,10 @@ boot_sasi:	.dc.b	'SASI',0
 boot_sxsi:	.dc.b	'SxSI ('		;'SxSI (SRAM $xxxxxxxx)'
 boot_sram:	.dc.b	'SRAM $',0
 boot_fdd:	.dc.b	'FDD',0
-boot_power:	.dc.b	'power switch',CRLF,0
-boot_remote:	.dc.b	'remote switch',CRLF,0
-boot_timer:	.dc.b	'timer',CRLF,0
-boot_unknown:	.dc.b	'???',CRLF,0
+boot_power:	.dc.b	'power switch',LF,0
+boot_remote:	.dc.b	'remote switch',LF,0
+boot_timer:	.dc.b	'timer',LF,0
+boot_unknown:	.dc.b	'???',LF,0
 		.even
 
 
@@ -2585,7 +2585,7 @@ print_scsi:
 		move.b	#')',(a0)+
 @@:
 print_scsi_no_ex:
-		lea	(crlf,pc),a1
+		lea	(lf,pc),a1
 		tst.b	d7
 		bne	@f
 		tst.b	(opt_all_flag,a6)
@@ -2820,7 +2820,7 @@ print_time_sub_day:
 		move.l	d4,d0
 		bsr	dec2_to_str		;秒数
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 		rts
@@ -2860,7 +2860,7 @@ print_error_count:
 		move.l	(a2)+,d0		;SRAM_ASKA_BUS
 		bsr	decstr
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
 print_error_count_skip:
@@ -2897,8 +2897,8 @@ print_printer_skip:
 
 
 printer_title:	.dc.b	'printer			: ',0
-online_mes:	.dc.b	'online',CRLF,0
-offline_mes:	.dc.b	'offline',CRLF,0
+online_mes:	.dc.b	'online',LF,0
+offline_mes:	.dc.b	'offline',LF,0
 		.even
 
 
@@ -3456,7 +3456,7 @@ print_iob_sub2:
 		STRCPY	a1,a2,-1
 		movea.l	(sp)+,a1
 print_iob_sub3:
-		STRCPY_CRLF a2
+		STRCPY_EOL a2
 		moveq	#1,d6			;ボード有り
 		bra	print_stack_buffer
 
@@ -3769,7 +3769,7 @@ board_title:	.dc.b	'optional board		: ',0
 B_TAB:		.reg	'			: '
 
 b_isprpcm:	.dc.b	'$e9e200 ～ $e9e3ff  ispr16bitPCMBoard',0
-b_ts6bga:	.dc.b	'$e9e200 ～ $e9e3ff  TS-6BGA',CRLF,B_TAB
+b_ts6bga:	.dc.b	'$e9e200 ～ $e9e3ff  TS-6BGA',LF,B_TAB
 		.dc.b	'$e'			;二行目
 b_ts6bga_1:	.dc.b	  'e0000 ～ $e'
 b_ts6bga_2:	.dc.b		     'effff  G-RAM bank (#0)',0
@@ -3777,7 +3777,7 @@ b_ts6bga_2:	.dc.b		     'effff  G-RAM bank (#0)',0
 b_mach2:	.dc.b	'$ea0020 ～ $ea7fff  ',0
 b_scsiex:	.dc.b	'$ea0000 ～ $ea1fff  ',0
 b_ts6bsi:	.dc.b	'$ea0000 ～ $ea1fef  TS-6BS1mkIII'
-b_ts6bsi_1:	.dc.b	CRLF,B_TAB		;二行目
+b_ts6bsi_1:	.dc.b	LF,B_TAB		;二行目
 		.dc.b	'$ea1ff0 ～ $ea1fff  Parallel',0
 b_ts6bsi_p:	.dc.b	'$ea1ff0 ～ $ea1fff  TS-6BS1mkIII (Parallel)',0
 
@@ -3794,10 +3794,10 @@ b_ppi:		.dc.b	'$ec0000 ～ $ec0007  X68K-PPI',0
 b_mu:		.dc.b	'$ecc000 ～ $ecc0ff  Mercury-Unit',0
 b_nept:		.dc.b	'$ece000 ～ $ece3ff  Neptune-X (#0)',0
 b_nere:		.dc.b	'$ece300 ～ $ece3ff  Nereid (#0)',0
-b_nere_bm_ee:	.dc.b	CRLF,B_TAB		;二行目
+b_nere_bm_ee:	.dc.b	LF,B_TAB		;二行目
 		.dc.b	'$ee0000 ～ $eeffff  bank memory (#0) / '
 b_nere_bm_ee_1:	.dc.b	' 4096K Bytes',0
-b_nere_bm_ef:	.dc.b	CRLF,B_TAB		;二行目
+b_nere_bm_ef:	.dc.b	LF,B_TAB		;二行目
 		.dc.b	'$ef0000 ～ $efffff  bank memory (#1) / '
 b_nere_bm_ef_1:	.dc.b	' 4096K Bytes',0
 B_NERE_LEN:	.equ	5			;バンクメモリ容量の桁数
@@ -3817,7 +3817,7 @@ b_fs_id:	.dc.b					       '0)',0
 b_psx550:	.dc.b	'$efff00 ～ $efff1f  PSX16550 (#0)',0
 b_psx750:	.dc.b	'$efff00 ～ $efff3f  PSX16750 (#0)',0
 b_psx750_7:	.dc.b	B_TAB
-		.dc.b	'$efff00 ～ $efff1f',CRLF,0
+		.dc.b	'$efff00 ～ $efff1f',LF,0
 
 b_psx_ch:	.dc.b	'25','47','69','8b','ad','cf','ef'
 
@@ -3968,6 +3968,8 @@ print_sys_mac_pfm_err:
 		rts
 
 
+* 標準エラー出力に文字列を出力する。
+*   LF->CR+LF 変換をしないので、改行する場合は CR+LF を使うこと。
 print_stderr:
 		move	#STDERR,-(sp)
 		move.l	a0,-(sp)
@@ -4186,8 +4188,8 @@ rtc_wait:
 proc_title:	.dc.b	'processor performance	: ',0
 syspfm_title:	.dc.b	'system    performance	: ',0
 machine_title:	.dc.b	'machine   performance	: ',0
-percent_as:	.dc.b	'% as compared with X68000 XVI 10MHz',CRLF,0
-percent:	.dc.b	'%',CRLF,0
+percent_as:	.dc.b	'% as compared with X68000 XVI 10MHz',LF,0
+percent:	.dc.b	'%',LF,0
 
 wait_mes:	.dc.b	'Wait...',0
 
@@ -4196,7 +4198,7 @@ del_wait_mes:	.dcb.b	7,BS
 		.dcb.b	7,BS
 		.dc.b	0
 
-rtc_stall_mes:	.dc.b	'RTCが停止しています。',CRLF,0
+rtc_stall_mes:	.dc.b	'RTCが停止しています。',LF,0
 		.even
 
 
@@ -4204,8 +4206,8 @@ rtc_stall_mes:	.dc.b	'RTCが停止しています。',CRLF,0
 *│				汎用プリントルーチン				   │
 *└────────────────────────────────────────┘
 
-print_crlf:
-		pea	(crlf,pc)
+print_lf:
+		pea	(lf,pc)
 		bra	@f
 print:
 		move.l	(4,sp),-(sp)
@@ -4213,11 +4215,6 @@ print:
 print_stack_buffer:
 		pea	(4,sp)
 @@:
-	.ifdef	__CRLF__
-		DOS	_PRINT
-		addq.l	#4,sp
-		rts
-	.else
 		move.l	(sp)+,d0		;文字列のアドレス
 		tst.b	(atty_flag,a6)
 		bne	print_lf2crlf
@@ -4273,7 +4270,6 @@ print_lf2crlf_nul:
 @@:		addq.l	#4,sp
 		movea.l	(sp)+,a0
 		rts
-	.endif
 
 
 flush_print_buf:
@@ -4677,7 +4673,7 @@ print_scsi_info:
 		bra	flush_and_exit1
 @@:
 		lea	(-sizeof_scsi_work,sp),sp
-		bsr	print_crlf
+		bsr	print_lf
 
 		moveq	#8-1,d5
 		TWOSCSI	_S_TW_CHK
@@ -4730,7 +4726,7 @@ no_additional_inquiry:
 		clr.b	(28,a1)
 		STRCPY	a1,a0,-1
 
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 
 		lea	(~scsi_strbuf,sp),a0
@@ -4794,7 +4790,7 @@ scsi_not_rmb:
 		STRCPY	a1,a0,-1
 		st	d6
 scsi_not_writep:
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 
 		tst.b	d6
 		beq	@f
@@ -4843,7 +4839,7 @@ scsi_info_type:
 
 		move.l	d7,d0
 		bsr	scsi_level_to_str	;レベルを表示する
-		STRCPY_CRLF a0
+		STRCPY_EOL a0
 		bsr	print_stack_buffer
 
 		lea	(~scsi_strbuf,sp),a0
@@ -4854,7 +4850,7 @@ scsi_info_type:
 		bsr	print_stack_buffer
 
 print_scsi_info_next2:
-		bsr	print_crlf
+		bsr	print_lf
 print_scsi_info_next:
 		addq	#1,d4
 		dbra	d5,print_scsi_info_loop
@@ -5018,42 +5014,42 @@ _mach2:		.dc.b	'(Mach-2) ',0
 _mach2p:	.dc.b	'(mach2p) ',0
 vendor_end:	.dc.b	'    ',0
 
-pdt_initiator:	.dc.b	'Initiator',CRLF,0
+pdt_initiator:	.dc.b	'Initiator',LF,0
 pdt_unknown:
-ansi_unknown:	.dc.b	'unknown',CRLF,0
+ansi_unknown:	.dc.b	'unknown',LF,0
 
-pdt_direct:	.dc.b	'Direct-access device',CRLF,0
-pdt_sequence:	.dc.b	'Sequential-access device',CRLF,0
-pdt_printer:	.dc.b	'Printer device',CRLF,0
-pdt_processor:	.dc.b	'Processor device',CRLF,0
-pdt_worm:	.dc.b	'Write-once device',CRLF,0
-pdt_cdrom:	.dc.b	'CD-ROM device',CRLF,0
-pdt_scanner:	.dc.b	'Scanner device',CRLF,0
-pdt_mo:		.dc.b	'Optical memory device',CRLF,0
-pdt_changer:	.dc.b	'Medium changer device',CRLF,0
-pdt_com:	.dc.b	'Communications device',CRLF,0
-pdt_it8:	.dc.b	'Defined by ASC IT8',CRLF,0
-pdt_array:	.dc.b	'Array controller device',CRLF,0
-pdt_enc:	.dc.b	'Enclosure services device',CRLF,0
-pdt_simpl:	.dc.b	'Simplified Direct Access',CRLF,0
-pdt_card:	.dc.b	'Optical Card Device',CRLF,0
-**pdt_mini:	.dc.b	'MiniDisc',CRLF,0
-pdt_bridge:	.dc.b	'Bridge Expander Device',CRLF,0
-pdt_nodev:	.dc.b	'Unknown or no device type',CRLF,0
+pdt_direct:	.dc.b	'Direct-access device',LF,0
+pdt_sequence:	.dc.b	'Sequential-access device',LF,0
+pdt_printer:	.dc.b	'Printer device',LF,0
+pdt_processor:	.dc.b	'Processor device',LF,0
+pdt_worm:	.dc.b	'Write-once device',LF,0
+pdt_cdrom:	.dc.b	'CD-ROM device',LF,0
+pdt_scanner:	.dc.b	'Scanner device',LF,0
+pdt_mo:		.dc.b	'Optical memory device',LF,0
+pdt_changer:	.dc.b	'Medium changer device',LF,0
+pdt_com:	.dc.b	'Communications device',LF,0
+pdt_it8:	.dc.b	'Defined by ASC IT8',LF,0
+pdt_array:	.dc.b	'Array controller device',LF,0
+pdt_enc:	.dc.b	'Enclosure services device',LF,0
+pdt_simpl:	.dc.b	'Simplified Direct Access',LF,0
+pdt_card:	.dc.b	'Optical Card Device',LF,0
+**pdt_mini:	.dc.b	'MiniDisc',LF,0
+pdt_bridge:	.dc.b	'Bridge Expander Device',LF,0
+pdt_nodev:	.dc.b	'Unknown or no device type',LF,0
 
-*ansi_scsi0:	.dc.b	'Non ANSI',CRLF,0
-*ansi_scsi1:	.dc.b	'ANSI X3.131-1986   (SCSI-1)',CRLF,0
-*ansi_scsi2:	.dc.b	'ANSI X3T9.2/86-109 (SCSI-2)',CRLF,0
-ansi_scsi0:	.dc.b	'Not ANSI',CRLF,0
-ansi_scsi1:	.dc.b	'SCSI-1 ANSI X3.131-1986',CRLF,0
-ansi_scsi2:	.dc.b	'SCSI-2 ANSI X3.131-1994',CRLF,0
-ansi_scsi3:	.dc.b	'SCSI-3 ANSI X3.301-1997 SPC Rev.11',CRLF,0
-ansi_spc2:	.dc.b	'SPC-2 T10/1236-D SPC-2',CRLF,0
+*ansi_scsi0:	.dc.b	'Non ANSI',LF,0
+*ansi_scsi1:	.dc.b	'ANSI X3.131-1986   (SCSI-1)',LF,0
+*ansi_scsi2:	.dc.b	'ANSI X3T9.2/86-109 (SCSI-2)',LF,0
+ansi_scsi0:	.dc.b	'Not ANSI',LF,0
+ansi_scsi1:	.dc.b	'SCSI-1 ANSI X3.131-1986',LF,0
+ansi_scsi2:	.dc.b	'SCSI-2 ANSI X3.131-1994',LF,0
+ansi_scsi3:	.dc.b	'SCSI-3 ANSI X3.301-1997 SPC Rev.11',LF,0
+ansi_spc2:	.dc.b	'SPC-2 T10/1236-D SPC-2',LF,0
 
 media_rmb:	.dc.b	'Removable Device',0
 media_writep:	.dc.b	'Write Protection',0
 
-no_scsi_mes:	.dc.b	'SCSI is not installed.',CRLF,0
+no_scsi_mes:	.dc.b	'SCSI is not installed.',LF,0
 		.even
 
 
@@ -5141,7 +5137,7 @@ print_int_sub:
 		STRCPY	a0,a2,-1		;割り込み名称
 		STRCPY	a1,a2,-1		;許可/禁止
 
-		lea	(crlf,pc),a0
+		lea	(lf,pc),a0
 		lsl	#2,d0
 		beq	@f			;IOCSで割り込み設定できない種類
 		movea.l	d0,a0
@@ -5189,8 +5185,8 @@ int_enable:	.dc.b	'enable',0
 int_disable:	.dc.b	'disable',0
 spr_mask:	.dc.b	'masked',0
 spr_notmask:	.dc.b	'not masked',0
-int_can_hook:	.dc.b	' (can hook)',CRLF,0
-int_cant_hook:	.dc.b	' (cannot hook)',CRLF,0
+int_can_hook:	.dc.b	' (can hook)',LF,0
+int_cant_hook:	.dc.b	' (cannot hook)',LF,0
 		.even
 
 
@@ -5220,10 +5216,8 @@ print_short_help:
 		bra	flush_and_exit1
 
 setblock_error:
-		move	#STDERR,-(sp)
-		pea	(memory_err_mes,pc)
-		DOS	_FPUTS
-		addq.l	#6,sp
+		lea	(memory_err_mes,pc),a0
+		bsr	print_stderr
 		move	#1,-(sp)
 		DOS	_EXIT2
 
@@ -5291,57 +5285,57 @@ long_opt_table2:
 * 文字列データ -------------------------------- *
 
 license_mes:
-		.dc.b	CRLF
-		.dc.b	' System Information (Si)',CRLF
-		.dc.b	' Modified Version ',VERSION,CRLF
-		.dc.b	CRLF
-		.dc.b	'Copyright (C)1992-1993  Misao.Satake',CRLF
-		.dc.b	'Copyright (C)1993-1997  Tatsuya.Tsuyuzaki',CRLF
-		.dc.b	'Copyright (C)1997/09/13 Arisugawa Seara',CRLF
-		.dc.b	'Copyright (C)1999-2022  TcbnErik',CRLF
-		.dc.b	CRLF
+		.dc.b	LF
+		.dc.b	' System Information (Si)',LF
+		.dc.b	' Modified Version ',VERSION,LF
+		.dc.b	LF
+		.dc.b	'Copyright (C)1992-1993  Misao.Satake',LF
+		.dc.b	'Copyright (C)1993-1997  Tatsuya.Tsuyuzaki',LF
+		.dc.b	'Copyright (C)1997/09/13 Arisugawa Seara',LF
+		.dc.b	'Copyright (C)1999-2022  TcbnErik',LF
+		.dc.b	LF
 		.dc.b	0
 
 title_mes:
-		.dc.b	CRLF
+		.dc.b	LF
 		.dc.b	'X680x0 '
 version_mes:
 		.dc.b	'System Information Extended Edition version ',VERSION
-		.dc.b	CRLF,0
+		.dc.b	LF,0
 
 usage_mes:
 		.dc.b	'usage : si [-a,-c,-e,-i,-m,-p,-s,'
-		.dc.b		'-f-(cs,emu,fpu,memf,merc,midi,mmu,mpu,ms)]',CRLF
+		.dc.b		'-f-(cs,emu,fpu,memf,merc,midi,mmu,mpu,ms)]',LF
 		.dc.b	0
 
 switch_mes:
-		.dc.b	'switch:',CRLF
-		.dc.b	'	-a  --all	all device',CRLF
-		.dc.b	'	-b  --board	I/O board only',CRLF
-		.dc.b	'	-c  --cut	cut benchmark',CRLF
-		.dc.b	'	-e  --expose	expose private data (MAC address)',CRLF
-		.dc.b	'	-i  --int	check interrupt',CRLF
-		.dc.b	'	-m  --m35	check Mercury-Unit v3.5',CRLF
-		.dc.b	'	-p  --power	benchmark only',CRLF
-		.dc.b	'	-s  --scsi	SCSI check',CRLF
-		.dc.b	'	-l  --license	print license',CRLF
-		.dc.b	'	-v  --version	print version',CRLF
-		.dc.b	'	-h  --help	print help',CRLF
-		.dc.b	CRLF
-		.dc.b	'	-f-cs		Clock Switch',CRLF
-		.dc.b	'	-f-emu		Emulator',CRLF
-		.dc.b	'	-f-fpu		Floating Point Unit',CRLF
-		.dc.b	'	-f-memf		Free Area (K bytes)',CRLF
-		.dc.b	'	-f-merc		Mercury-Unit',CRLF
-		.dc.b	'	-f-midi		MIDI',CRLF
-		.dc.b	'	-f-mmu		Memory Management Unit',CRLF
-		.dc.b	'	-f-mpu		Micro Processing Unit',CRLF
-		.dc.b	'	-f-ms		Memory Size (M bytes)',CRLF
-crlf:		.dc.b	CRLF
-		.dc.b	0
+		.dc.b	'switch:',LF
+		.dc.b	'	-a  --all	all device',LF
+		.dc.b	'	-b  --board	I/O board only',LF
+		.dc.b	'	-c  --cut	cut benchmark',LF
+		.dc.b	'	-e  --expose	expose private data (MAC address)',LF
+		.dc.b	'	-i  --int	check interrupt',LF
+		.dc.b	'	-m  --m35	check Mercury-Unit v3.5',LF
+		.dc.b	'	-p  --power	benchmark only',LF
+		.dc.b	'	-s  --scsi	SCSI check',LF
+		.dc.b	'	-l  --license	print license',LF
+		.dc.b	'	-v  --version	print version',LF
+		.dc.b	'	-h  --help	print help',LF
+		.dc.b	LF
+		.dc.b	'	-f-cs		Clock Switch',LF
+		.dc.b	'	-f-emu		Emulator',LF
+		.dc.b	'	-f-fpu		Floating Point Unit',LF
+		.dc.b	'	-f-memf		Free Area (K bytes)',LF
+		.dc.b	'	-f-merc		Mercury-Unit',LF
+		.dc.b	'	-f-midi		MIDI',LF
+		.dc.b	'	-f-mmu		Memory Management Unit',LF
+		.dc.b	'	-f-mpu		Micro Processing Unit',LF
+		.dc.b	'	-f-ms		Memory Size (M bytes)',LF
+		.dc.b	LF,0
 
 memory_err_mes:	.dc.b	'si: setblock failed.'
-cr_and_lf:	.dc.b	CR,LF,0			;必ず CR + LF
+cr_and_lf:	.dc.b	CR			;必ず CR + LF
+lf:		.dc.b	LF,0
 
 
 * Block Storage Section ----------------------- *

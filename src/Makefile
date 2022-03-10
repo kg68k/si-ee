@@ -13,21 +13,26 @@ LDFLAGS	=
 BINDIR	= /usr/local/bin
 MANDIR	= /usr/local/man/cat1
 
-SIOPT	=
-#	  -sENABLE_DISABLE
-#	  -sSHUTDOWN_COUNT
-
-
 SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_scsiex.s si_sram.s
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x
-SI_DOC	= si.txt
+SI_TXT	= si.txt
 
-#all: both
+SRC_ZIP	= src.zip
+SI_ZIP	= si.zip
+ARCS	= $(SRC_ZIP) $(SI_ZIP)
+
 all: $(SI_R)
 
-both: $(SI_R) $(SI_X)
+
+$(SI_ZIP): $(SRC_ZIP) $(SI_TXT) $(SI_R)
+	rm -f $@
+	zip -9 $@ $^
+
+$(SRC_ZIP): Makefile si.mac $(SRCS)
+	rm -f $@
+	zip -9 $@ $^
 
 
 $(SI_R): $(OBJS)
@@ -37,17 +42,15 @@ $(SI_X): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
 %.o: %.s si.mac
-	$(AS) $(ASFLAGS) $(SIOPT) $<
+	$(AS) $(ASFLAGS) $<
 
 
 install:
 	cp $(SI_R) $(BINDIR)
-	cp $(SI_DOC) $(MANDIR)
+	cp $(SI_TXT) $(MANDIR)
 
 clean:
-	rm -f si.[ox]
+	rm -f si.[xr] $(OBJS) $(ARCS)
 
-distclean:
-	rm -f si.[orx]
 
 # EOF

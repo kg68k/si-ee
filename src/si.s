@@ -1,8 +1,8 @@
 		.title	X680x0 System Information Extended Edition
 
 
-VERSION:	.reg	'3.80 beta'
-DATE:		.reg	'2022-03-10'
+VERSION:	.reg	'4.00'
+DATE:		.reg	'2022-03-12'
 
 
 * Include File -------------------------------- *
@@ -3657,20 +3657,16 @@ print_iob_ne_sub_end:
 * out	a2.l	〃
 print_iob_ne_mac:
 		PUSH	d0-d1/a0-a1
+		tst.b	(opt_exp_flag,a6)
+		beq	@f			;無指定なら表示しない
+
+* -e,--expose 指定時のみ実データを表示する
 		moveq	#' ',d0
 		move.b	d0,(a2)+
 		move.b	#'/',(a2)+
 		move.b	d0,(a2)+
-
-		tst.b	(opt_exp_flag,a6)
-		beq	@f
-
-		bsr	read_and_str_mac_addr	;-e,--expose 指定時のみ
-		bra	9f			;実データを表示する
+		bsr	read_and_str_mac_addr
 @@:
-		lea	(b_hidden_mac,pc),a1	;無指定なら伏せ字で表示する
-		STRCPY	a1,a2,-1
-9:
 		POP	d0-d1/a0-a1
 		rts
 
@@ -3803,7 +3799,6 @@ b_nere_bm_ef_1:	.dc.b	' 4096K Bytes',0
 B_NERE_LEN:	.equ	5			;バンクメモリ容量の桁数
 *b_nere_4m:	.dc.b	' 4096'
 b_nere_16m:	.dc.b	'16384'
-b_hidden_mac:	.dc.b	'(-e option to display MAC address)',0
 
 *b_venus:	.dc.b	'$ecf000 ～ $ecffff  VENUS-X',0
 b_bank:		.dc.b	'$ecffff ～ $ecffff  BANK RAM BOARD',0

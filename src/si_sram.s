@@ -103,6 +103,7 @@ getType_ch30omake:
   cmpi.l #CH30_HEADER2_ID,(~CH30_HEADER2,a1)
   bne @f
   cmpi.b #CH30_SAVE_MAGIC,(~CH30_SAVE_MAGIC,a1)
+  bne @f
 
     moveq #SRAM_P_CH30_OMAKE,d0
     rts

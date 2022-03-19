@@ -1,10 +1,6 @@
 		.title	X680x0 System Information Extended Edition
 
 
-VERSION:	.reg	'4.00'
-DATE:		.reg	'2022-03-12'
-
-
 * Include File -------------------------------- *
 
 		.include	fefunc.mac
@@ -13,6 +9,7 @@ DATE:		.reg	'2022-03-12'
 		.include	scsicall.mac
 
 		.include	si.mac
+		.include	si_ver.mac
 
 
 * Global Symbol ------------------------------- *
@@ -697,8 +694,8 @@ print_si_version:
 		rts
 
 
-si_ver_mes:	.dc.b	'System Information	: Extended Edition version ',VERSION
-		.dc.b	' (',DATE,')'
+si_ver_mes:	.dc.b	'System Information	: Extended Edition version ',SIEE_VERSION
+		.dc.b	' (',SIEE_DATE,')'
 		.dc.b	LF,0
 		.even
 
@@ -5282,7 +5279,7 @@ long_opt_table2:
 license_mes:
 		.dc.b	LF
 		.dc.b	' System Information (Si)',LF
-		.dc.b	' Modified Version ',VERSION,LF
+		.dc.b	' Modified Version ',SIEE_VERSION,LF
 		.dc.b	LF
 		.dc.b	'Copyright (C)1992-1993  Misao.Satake',LF
 		.dc.b	'Copyright (C)1993-1997  Tatsuya.Tsuyuzaki',LF
@@ -5295,7 +5292,7 @@ title_mes:
 		.dc.b	LF
 		.dc.b	'X680x0 '
 version_mes:
-		.dc.b	'System Information Extended Edition version ',VERSION
+		.dc.b	'System Information Extended Edition version ',SIEE_VERSION
 		.dc.b	LF,0
 
 usage_mes:

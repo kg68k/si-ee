@@ -30,7 +30,7 @@ $(SI_ZIP): $(SRC_ZIP) $(SI_TXT) $(SI_R)
 	rm -f $@
 	zip -9 $@ $^
 
-$(SRC_ZIP): Makefile si.mac $(SRCS)
+$(SRC_ZIP): Makefile si.mac si_ver.mac $(SRCS)
 	rm -f $@
 	zip -9 $@ $^
 
@@ -40,6 +40,8 @@ $(SI_R): $(OBJS)
 
 $(SI_X): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
+
+si.o: si.s si_ver.mac
 
 %.o: %.s si.mac
 	$(AS) $(ASFLAGS) $<

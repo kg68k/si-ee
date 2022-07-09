@@ -4421,12 +4421,15 @@ sw_f_mpu:
 *	ccr	<tst.l d0> の結果
 
 get_mpu_type:
-		move.l	a0,-(sp)
+		PUSH	a0-a1
+		lea	(callm_entry,pc),a0
+		move.l	a0,(callm_ptr-callm_entry,a0)
+
 		PUSH_SR_DI
 		move.l	(ILLEGAL_VEC*4),-(sp)
 		lea	(sp),a0
-		pea	(get_mpu_type_end,pc)
-		move.l	(sp),(ILLEGAL_VEC*4)
+		lea	(get_mpu_type_end,pc),a1
+		move.l	a1,(ILLEGAL_VEC*4)
 
 		moveq	#0,d0
 		.cpu	68010
@@ -4444,18 +4447,31 @@ get_mpu_type:
 		.cpu	68030
 		movec	caar,d0
 
-		moveq	#2,d0
-		pmove	tt0,(sp)
-
 		moveq	#3,d0
+		lea	(callm_desc,pc),a1
+		.cpu	68020
+		callm	#0,(a1)
+
+		moveq	#2,d0
 get_mpu_type_end:
 		.cpu	68000
 		lea	(a0),sp
 		move.l	(sp)+,(ILLEGAL_VEC*4)
 		POP_SR
-		movea.l	(sp)+,a0
+		POP	a0-a1
 		tst.l	d0
 		rts
+
+
+		.cpu	68020
+callm_desc:
+		.dc.l	0			;OPT|TYPE|ACCESS LEVEL|RESETVED
+callm_ptr:	.dc.l	0			;module entry word pointer
+		.dc.l	0,0			;module data area pointer
+callm_entry:
+		.dc	%1111_0000_0000_0000	;module entry word
+		rtm	sp
+		.cpu	68000
 
 
 *┌────────────────────────────────────────┐

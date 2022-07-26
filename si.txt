@@ -323,7 +323,7 @@ memory size
 
 	○この項目は常に表示されます。
 
-extention memory
+extension memory
 
 	　ハイメモリ(ローカルメモリ)の実装容量と空き容量を表示します。
 

@@ -2324,7 +2324,7 @@ print_memsize_sub_end:
 
 
 memsize_title:	.dc.b	'memory size		: ',0
-himem_title:	.dc.b	'extention memory	: ',0
+himem_title:	.dc.b	'extension memory	: ',0
 memsize_kb:	.dc.b	'K Bytes (',0
 memsize_kb_free:.dc.b	'K Bytes Free)',LF,0
 		.even

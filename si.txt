@@ -202,9 +202,9 @@ host computer
 	込まれている場合はそれを使用します。
 
 	　アクセラレータは 060turbo、040turbo、JUPITER-X、Xellent30(s|PRO)、
-	040Excel、060Excel に対応しています。ただし、68030 モードでの 040turbo
-	や、68000 モードでの JUPITER-X・040Excel・060Excel は認識できません。
-	また、Xellent30PRO は Xellent30s と表示されます。
+	040Excel、060Excel、PhantomX に対応しています。ただし、68030 モードで
+	の 040turboや、68000 モードでの JUPITER-X・040Excel・060Excel は認識で
+	きません。また、Xellent30PRO は Xellent30s と表示されます。
 
 	　一部の機種は判別することが出来ません。以下の一覧で同じ行に並んでいる
 	ものがそれに該当します。HD 内蔵モデルかどうかは判別しません。
@@ -221,6 +221,14 @@ host computer
 	XM6
 
 	○この項目は常に表示されます。
+
+PhantomX
+
+	　アクセラレータ PhantomX が装着されていれば、バージョン番号、エミュレ
+	ーション中の MPU、ウェイトレベル、FDD スワップ設定、RaspberryPi の SOC
+	温度を表示します。
+
+	○この項目は PhantomX 装着時に表示されます。
 
 BIOS ROM
 

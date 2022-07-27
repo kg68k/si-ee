@@ -13,7 +13,7 @@ LDFLAGS	=
 BINDIR	= /usr/local/bin
 MANDIR	= /usr/local/man/cat1
 
-SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_scsiex.s si_sram.s
+SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s si_scsiex.s si_sram.s
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x

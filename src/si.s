@@ -43,6 +43,13 @@
 		.xref	Accelerator_GetTypes
 		.xref	Accelerator_AwesomexExists
 		.xref	Accelerator_ToString
+* si_phantomx.s
+		.xref	PhantomX_Exists
+		.xref	PhantomX_GetVersion,PhantomX_VersionToString
+		.xref	PhantomX_GetMpu,PhantomX_MpuToString
+		.xref	PhantomX_GetWait,PhantomX_WaitToString
+		.xref	PhantomX_GetFddSwap,PhantomX_FddSwapToString
+		.xref	PhantomX_GetTemperature,PhantomX_TemperatureToString
 * si_scsiex.s
 		.xref	Scsiex_GetType
 		.xref	Scsiex_ToString
@@ -561,6 +568,7 @@ arg_end:
 		bsr	print_si_version
 		bsr	print_emulator
 		bsr	print_host
+		bsr	print_phantomx
 		bsr	print_romver
 		bsr	print_clockswitch
 		bsr	print_mpu
@@ -869,6 +877,72 @@ is_exist_js_true:
 host_title:	.dc.b	'host computer		: ',0
 _on_:		.dc.b	' on ',0
 env_hostname:	.dc.b	'HOSTNAME',0
+		.even
+
+
+*┌────────────────────────────────────────┐
+*│				      PhantomX  				   │
+*└────────────────────────────────────────┘
+
+print_phantomx:
+		lea	(-256,sp),sp
+		lea	(sp),a0
+		lea	(px_title,pc),a1
+		bsr	px_strcpy
+
+		bsr	PhantomX_Exists
+		bne	print_px_exists
+
+		tst.b	(opt_all_flag,a6)
+		beq	print_px_end
+
+		lea	(not_installed,pc),a1
+		bra	print_px_pr
+print_px_exists:
+		lea	(px_version,pc),a1
+		bsr	px_strcpy
+		bsr	PhantomX_GetVersion
+		bsr	PhantomX_VersionToString
+
+		lea	(px_mpu,pc),a1
+		bsr	px_strcpy
+		bsr	PhantomX_GetMpu
+		bsr	PhantomX_MpuToString
+
+		lea	(px_wait,pc),a1
+		bsr	px_strcpy
+		bsr	PhantomX_GetWait
+		bsr	PhantomX_WaitToString
+
+		lea	(px_fdd_swap,pc),a1
+		bsr	px_strcpy
+		bsr	PhantomX_GetFddSwap
+		bsr	PhantomX_FddSwapToString
+
+		lea	(px_temp0,pc),a1
+		bsr	px_strcpy
+		bsr	PhantomX_GetTemperature
+		bsr	PhantomX_TemperatureToString
+		lea	(px_temp1,pc),a1
+print_px_pr:
+		bsr	px_strcpy
+		bsr	print_stack_buffer
+print_px_end:
+		lea	(256,sp),sp
+		rts
+
+px_strcpy:
+		STRCPY	a1,a0,-1
+		rts
+
+
+px_title:	.dc.b	'PhantomX		: ',0
+px_version:	.dc.b	'version ',0
+px_mpu:		.dc.b	', MPU ',0
+px_wait:	.dc.b	', wait ',0
+px_fdd_swap:	.dc.b	', FDD swap ',0
+px_temp0:	.dc.b	', SOC ',0
+px_temp1:	.dc.b	'℃',LF,0
 		.even
 
 

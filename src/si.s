@@ -43,6 +43,10 @@
 		.xref	Accelerator_GetTypes
 		.xref	Accelerator_AwesomexExists
 		.xref	Accelerator_ToString
+* si_memory.s
+		.xref	Memory_GetMainArea,Memory_GetMainFreeSize
+		.xref	Memory_GetHighArea,Memory_GetHighFreeSize
+		.xref	Memory_AreaToString,Memory_SizeToString,Memory_FreeSizeToString
 * si_phantomx.s
 		.xref	PhantomX_Exists
 		.xref	PhantomX_GetVersion,PhantomX_VersionToString
@@ -97,13 +101,6 @@ ROMVER_060T:	.equ	$15_970529		;日付違いあり
 
 ALMTINIT:	.equ	$9ca
 ALMTIMER:	.equ	$9cc
-
-
-	.ifndef	_HIMEM
-_HIMEM:		.equ	$f8
-	.endif
-_HIMEM_GETSIZE:	.equ	3
-_HIMEM_VERSION:	.equ	5
 
 
 TWOSCSI:	.macro	callno
@@ -580,8 +577,8 @@ arg_end:
 		bsr	print_vernum
 		bsr	print_syspatch
 		bsr	print_float
-		bsr	print_memory_size
-		bsr	print_himem_size
+		bsr	print_main_memory
+		bsr	print_high_memory
 		bsr	print_sram
 		bsr	print_boot_count
 		bsr	print_bootinf
@@ -2100,7 +2097,7 @@ print_sysp_skip:
 *		-1 なら syspatch の類は組み込まれていない.
 *	ccr	Z=1:060turbo.sys Z=0:それ以外か syspatch なし
 
-is_060turbo:
+is_060turbo::
 		PUSH	d1/a1
 		suba.l	a1,a1			;エラー時の a1.ne.'060T' を保証
 		move	#$8000,d1
@@ -2199,208 +2196,78 @@ idiv_bug:	.dc.b	' (Warning: FPACK __IDIV returns wrong value)',0
 *│			       メインメモリ装着チェック				   │
 *└────────────────────────────────────────┘
 
-print_memory_size:
-		bsr	get_memory_free_size
-		move.l	d0,d1
-		bsr	get_memory_size
-		lea	(memsize_title,pc),a1
-		bra	print_memsize_sub
-*		rts
+print_main_memory:
+		lea	(-256,sp),sp
+		lea	(main_mem_title,pc),a1
+		lea	(sp),a0
+		STRCPY	a1,a0,-1
 
+		bsr	Memory_GetMainArea
+		move.l	d1,d2
+		sub.l	d0,d2		;メインメモリのバイト数
+		subq.l	#1,d1
+		move.l	d0,-(sp)
+		bsr	Memory_GetMainFreeSize
+		move.l	d0,d3
+		move.l	(sp)+,d0
+		bsr	print_memory_sub
 
-* メインメモリ実装容量を調べる.
-* out	d0.l	メモリ実装容量(バイト単位)
-
-get_memory_size:
-		move.l	a0,-(sp)
-		suba.l	a0,a0
-@@:
-		bsr	check_bus_error_long
-		bne	@f
-		adda.l	#$10_0000,a0
-		cmpa.l	#$c0_0000,a0
-		bcs	@b
-@@:
-		move.l	a0,d0
-		movea.l	(sp)+,a0
+		lea	(256,sp),sp
 		rts
-
-* メインメモリ空き容量を調べる.
-* out	d0.l	空きメモリ容量(バイト単位)
-* 備考:
-*	DOS _SETBLOCK/_MALLOC を使用する方法では、060turbo(060turbo.sys)
-*	や TS-6BE16(xt30drv.x)のハイメモリの影響を受けてしまうので、直接
-*	Human68k のメモリ管理を参照して計算する.
-
-get_memory_free_size:
-		PUSH	d1-d2/a0-a2
-		lea	($0100_0000),a3
-		movea.l	($1c00),a1		;メモリ末尾
-
-		lea	(si_start-$100+$10,pc),a0
-		move.l	(-$10+12,a0),d2		;自分自身のメモリブロックの
-		bne	@f			;最大サイズを計算する
-		move.l	a1,d2
-@@:		sub.l	a0,d2
-		cmpa.l	a3,a0
-		bcs	@f
-		moveq	#0,d2			;ハイメモリでの実行時は無視する
-@@:
-		movea.l	($1c04),a0		;先頭のメモリブロック
-		bra	get_mem_free_next
-get_mem_free_loop:
-		move.l	(12,a0),d1
-		bne	@f
-		move.l	a1,d1
-@@:
-		moveq	#$1f,d0
-		add.l	(8,a0),d0		;16 バイト単位に切り上げ
-		andi	#$fff0,d0		;＆ メモリ管理ポインタ分を引く
-		sub.l	d0,d1
-		bls	@f
-		cmp.l	d1,d2
-		bcc	@f
-		move.l	d1,d2			;最大空きブロック容量を更新
-@@:
-		move.l	(12,a0),d1
-		beq	get_mem_free_end
-		movea.l	d1,a0
-get_mem_free_next:
-		cmpa.l	a3,a0			;ハイメモリに着いたらやめる
-		bcs	get_mem_free_loop
-get_mem_free_end:
-		move.l	d2,d0
-		POP	d1-d2/a0-a2
-		rts
-
-.if 0
-get_memory_free_size:
-		pea	($ffffff)
-		pea	(si_start-$f0,pc)
-		DOS	_SETBLOCK
-		addq.l	#4,sp
-		and.l	d0,(sp)
-
-		pea	($ffffff)
-		DOS	_MALLOC
-		and.l	(sp)+,d0
-
-		cmp.l	(sp),d0
-		bcc	@f
-		move.l	(sp),d0
-@@:		addq.l	#4,sp
-		rts
-.endif
 
 
 *┌────────────────────────────────────────┐
 *│				ハイメモリ装着チェック				   │
 *└────────────────────────────────────────┘
 
-print_himem_size:
-		movea.l	(_HIMEM*4+IOCS_VECTBL),a0
-		cmpi	#'M'<<8,-(a0)
-		bne	print_himem_size_err
-		cmpi.l	#'HIME',-(a0)
-		beq	print_himem_size_exist
-print_himem_size_err:
-		moveq	#-1,d0
-		tst.b	(opt_all_flag,a6)
-		bne	@f
-		rts
-print_himem_size_exist:
-		bsr	get_himem_size
-		move.l	d0,d1
-		ble	print_himem_size_err
-		bsr	get_himem_free_size
-		exg	d0,d1
-@@:
-		lea	(himem_title,pc),a1
-		bra	print_memsize_sub
-*print_himem_size_end:
-*		rts
-
-
-* ハイメモリ実装容量を調べる.
-* 060turbo.sysでIOCS _SYS_STATが拡張されていなければ、TS-6BE16の16MBと見なす.
-* out	d0.l	メモリ実装容量(バイト単位)
-*		0ならハイメモリ無し、負数ならエラー
-
-get_himem_size:
-		PUSH	d1/a1
-	.if	0
-		moveq	#_HIMEM_VERSION,d1
-		IOCS	_HIMEM
-		cmpi.l	#'060T',d0
-		bne	get_himem_size_ts6be16
-	.endif
-		cmpi.b	#6,(MPUTYPE)		;IOCS _SYS_STAT を使うので $cbc.b 参照
-		bcs	get_himem_size_ts6be16
-		bsr	is_060turbo
-		bne	get_himem_size_ts6be16
-
-		move	#$4000,d1		;d0=size,a1=start adr.
-		IOCS	_SYS_STAT
-		bra	@f
-get_himem_size_ts6be16:
-		move.l	#16*1024*1024,d0
-@@:		POP	d1/a1
-		rts
-
-* ハイメモリ空き容量を調べる.
-* IOCS _HIMEMが使用可能なことを確認してから呼び出すこと.
-* out	d0.l	空きメモリ容量(バイト単位)
-
-get_himem_free_size:
-		move.l	d1,-(sp)
-		moveq	#_HIMEM_GETSIZE,d1
-		IOCS	_HIMEM
-		move.l	d1,d0
-		move.l	(sp)+,d1
-		rts
-
-
-* メモリ容量表示下請け ------------------------ *
-* in	d0.l	実装容量(0か負数なら未実装)
-*	d1.l	空き容量
-*		d0/d1いずれもバイト数.
-*	a1.l	タイトル文字列のアドレス
-* break d0-d1/a0-a1
-
-print_memsize_sub:
+print_high_memory:
 		lea	(-256,sp),sp
+		lea	(high_mem_title,pc),a1
 		lea	(sp),a0
-		STRCPY	a1,a0,-1		;title
-		lea	(not_installed,pc),a1
-		tst.l	d0
-		ble	print_memsize_sub_end
-;実装容量
-		move.l	d1,-(sp)
-		lsr.l	#8,d0
-		lsr.l	#2,d0			;÷1024
-		moveq	#MEMSIZE_LEN,d1
-		bsr	fe_iusing
-		lea	(memsize_kb,pc),a1
 		STRCPY	a1,a0,-1
-;空き容量
-		move.l	(sp)+,d0
-		lsr.l	#8,d0
-		lsr.l	#2,d0			;÷1024
-		moveq	#MEMSIZE_LEN,d1
-		bsr	fe_iusing
-		lea	(memsize_kb_free,pc),a1
-print_memsize_sub_end:
-		STRCPY	a1,a0
 
-		bsr	print_stack_buffer
+		bsr	Memory_GetHighArea
+		move.l	d1,d2
+		beq	print_himem_notinst
+		sub.l	d0,d2		;ハイメモリのバイト数
+		subq.l	#1,d1
+		move.l	d0,-(sp)
+		bsr	Memory_GetHighFreeSize
+		move.l	d0,d3
+		move.l	(sp)+,d0
+		bsr	print_memory_sub
+print_himem_end:
 		lea	(256,sp),sp
 		rts
 
+print_himem_notinst:
+		tst.b	(opt_all_flag,a6)
+		beq	print_himem_end
 
-memsize_title:	.dc.b	'memory size		: ',0
-himem_title:	.dc.b	'extension memory	: ',0
-memsize_kb:	.dc.b	'K Bytes (',0
-memsize_kb_free:.dc.b	'K Bytes Free)',LF,0
+		lea	(not_installed,pc),a1
+		STRCPY	a1,a0,-1
+		bsr	print_stack_buffer
+		bra	print_himem_end
+
+print_memory_sub:
+		bsr	Memory_AreaToString
+		move.b	#' ',(a0)+
+		move.l	d2,d0
+		bsr	Memory_SizeToString
+
+		move.b	#' ',(a0)+
+		move.b	#'(',(a0)+
+		move.l	d3,d0
+		bsr	Memory_FreeSizeToString
+		lea	(mem_free,pc),a1
+		STRCPY	a1,a0
+
+		bra	print_stack_buffer
+
+
+main_mem_title:	.dc.b	'main memory		: ',0
+high_mem_title:	.dc.b	'high memory		: ',0
+mem_free:	.dc.b	' free)',LF,0
 		.even
 
 
@@ -4371,13 +4238,15 @@ init_print_buf2:
 *└────────────────────────────────────────┘
 
 sw_f_memory_size:
-		bsr	get_memory_size
+		bsr	Memory_GetMainArea
+		sub.l	d0,d1
+		move.l	d1,d0
 		swap	d0
 		lsr	#4,d0			;÷1024K
 		bra.s	exit_d0
 
 sw_f_memory_free:
-		bsr	get_memory_free_size
+		bsr	Memory_GetMainFreeSize
 		lsr.l	#8,d0
 		lsr.l	#2,d0			;÷1024
 		bra.s	exit_d0

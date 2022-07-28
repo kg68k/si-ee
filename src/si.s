@@ -277,6 +277,9 @@ emu_ver_type:
 emu_ver:	.ds	1
 emu_type:	.ds	1
 
+high_mem_area:	.ds.l	2
+mem_width:	.ds.l	1
+
 has_scsiex_type:.ds.b	1
 scsiex_type:	.ds.b	1
 
@@ -562,6 +565,8 @@ arg_end:
 		tst.b	(opt_pow_flag,a6)	;--all,--cutよりも優先
 		bne	benchmark_only
 
+		bsr	init_misc2
+
 		bsr	print_si_version
 		bsr	print_emulator
 		bsr	print_host
@@ -686,6 +691,23 @@ emulator_check:
 
 emu_check_exit:
 		DOS	_EXIT
+
+
+* 初期化いろいろ(メイン表示直前) -------------- *
+
+init_misc2:
+
+;メモリ容量の表示桁数
+		bsr	Memory_GetHighArea
+		movem.l	d0-d1,(high_mem_area,a6)
+		sub.l	d0,d1			;ハイメモリなしの場合は d1=0
+		moveq	#3,d0
+		cmpi.l	#1000*1024*1024,d1
+		bcs	@f
+		moveq	#4,d0
+@@:		move.l	d0,(mem_width,a6)
+
+		rts
 
 
 *┌────────────────────────────────────────┐
@@ -2226,7 +2248,7 @@ print_high_memory:
 		lea	(sp),a0
 		STRCPY	a1,a0,-1
 
-		bsr	Memory_GetHighArea
+		movem.l	(high_mem_area,a6),d0-d1
 		move.l	d1,d2
 		beq	print_himem_notinst
 		sub.l	d0,d2		;ハイメモリのバイト数
@@ -2253,6 +2275,8 @@ print_memory_sub:
 		bsr	Memory_AreaToString
 		move.b	#' ',(a0)+
 		move.l	d2,d0
+		moveq	#0,d1
+		move.l	(mem_width,a6),d1
 		bsr	Memory_SizeToString
 
 		move.b	#' ',(a0)+
@@ -2293,7 +2317,7 @@ print_sram:
 		move.l	d2,d0
 		lsr.l	#8,d0
 		lsr.l	#2,d0			;キロバイト単位
-		moveq	#.sizeof.('256'),d1	;ハイメモリの最大 '256MB' に揃える
+		move.l	(mem_width,a6),d1
 		bsr	fe_iusing
 
 		lea	(sramsize_kb,pc),a1

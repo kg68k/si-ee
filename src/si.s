@@ -62,7 +62,7 @@
 		.xref	SCSIEX_UNKNOWN,SCSIEX_TS6BS1MK3
 		.xref	SCSIEX_MACH2,SCSIEX_MACH2P
 * si_sram.s
-		.xref	Sram_GetSizeInKiB
+		.xref	Sram_GetSize
 		.xref	Sram_GetUseMode
 		.xref	SramProgram_GetType
 		.xref	SramProgram_ToString
@@ -2281,8 +2281,19 @@ print_sram:
 		lea	(sram_title,pc),a1
 		STRCPY	a1,a0,-1
 
-		bsr	Sram_GetSizeInKiB
-		moveq	#MEMSIZE_LEN,d1
+		bsr	Sram_GetSize
+		move.l	d0,d2
+		move.l	#SRAM,d0
+		move.l	d0,d1
+		add.l	d2,d1
+		subq.l	#1,d1
+		bsr	Memory_AreaToString
+		move.b	#' ',(a0)+
+
+		move.l	d2,d0
+		lsr.l	#8,d0
+		lsr.l	#2,d0			;キロバイト単位
+		moveq	#.sizeof.('256'),d1	;ハイメモリの最大 '256MB' に揃える
 		bsr	fe_iusing
 
 		lea	(sramsize_kb,pc),a1
@@ -2314,7 +2325,7 @@ print_sram:
 
 
 sram_title:	.dc.b	'SRAM			: ',0
-sramsize_kb:	.dc.b	'K Bytes / ',0
+sramsize_kb:	.dc.b	'KB / ',0
 
 sram_use_offs:	.dc.b	sram_free-$,sram_ramdisk-$,sram_prog-$,sram_unknown-$
 sram_free:	.dc.b	'Free',0

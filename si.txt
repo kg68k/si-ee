@@ -437,6 +437,7 @@ optional board
 	POLYPHON
 	PSX16550
 	PSX16750
+	KeplerX (開発中の仕様に基づきます)
 
 	　なお、TS-6BGA や TS-6BSImkIII は満開製作所から MK-GA1、MK-HA1 といっ
 	た型番でリバイバル版が出ていますが、名称が違うだけで同一のものなので判

@@ -172,10 +172,10 @@ U_IO2_IO:	.equ	$eafd08+3
 U_IO3_IO:	.equ	$eafd0c+3
 GPIB_IO:	.equ	$eafe00+3
 
-AWESOME_IO1:	.equ	$ec0000+$100
-AWESOME_IO2:	.equ	$ec8000
 PPI_IO:		.equ	$ec0000+6
 F_SCAN_IO:	.equ	$ec0ff0+7
+
+KEPLERX_IO:	.equ	$ec1000
 
 XT30_IO0:	.equ	$ec0000
 XT30_IO1:	.equ	$ec4000
@@ -3177,9 +3177,31 @@ print_iob_no_ppi:
 ~a0:		.set	PPI_IO
 
 
-* FineScanner-X68 (#$0 ～ #$3)
+* FineScanner-X68 (#$0)
 		moveq	#$0,d0
-		moveq	#4-1,d1
+		moveq	#1-1,d1
+		bsr	print_iob_fs_sub
+
+
+* KeplerX (開発中仕様: $00ec1000-$00ec1fff)
+		lea	(KEPLERX_IO-~a0,a0),a0
+		bsr	check_bus_error_word
+		bne	print_iob_no_keplerx
+
+		lea	(b_keplerx,pc),a1
+		bsr	print_iob_sub
+
+		moveq	#$2,d0			;FineScanner-X68 #$1 は有り得ないので
+		moveq	#2-1,d1			;#$2,#$3 のみ確認する
+		bra	print_iob_fs23
+print_iob_no_keplerx:
+* a0 は破壊
+
+
+* FineScanner-X68 (#$1 ～ #$3)
+		moveq	#$1,d0
+		moveq	#3-1,d1
+print_iob_fs23:
 		bsr	print_iob_fs_sub
 print_iob_no_ppi_fs:
 * a0 は破壊
@@ -3760,6 +3782,7 @@ b_gpib:		.dc.b	'$eafe00 ～ $eafe1f  GP-IB',0
 
 b_awe:		.dc.b	'$ec0000 ～ $ec8001  AWESOME-X',0
 b_ppi:		.dc.b	'$ec0000 ～ $ec0007  X68K-PPI',0
+b_keplerx:	.dc.b	'$ec1000 ～ $ec1fff  KeplerX',0
 b_mu:		.dc.b	'$ecc000 ～ $ecc0ff  Mercury-Unit',0
 b_nept:		.dc.b	'$ece000 ～ $ece3ff  Neptune-X (#0)',0
 b_nere:		.dc.b	'$ece300 ～ $ece3ff  Nereid (#0)',0

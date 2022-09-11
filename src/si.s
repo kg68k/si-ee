@@ -175,7 +175,7 @@ GPIB_IO:	.equ	$eafe00+3
 PPI_IO:		.equ	$ec0000+6
 F_SCAN_IO:	.equ	$ec0ff0+7
 
-KEPLERX_IO:	.equ	$ec1000
+KEPLERX_IO:	.equ	$ecb000
 
 XT30_IO0:	.equ	$ec0000
 XT30_IO1:	.equ	$ec4000
@@ -294,6 +294,7 @@ opt_pow_flag:	.ds.b	1
 opt_iob_flag:	.ds.b	1
 opt_m35_flag:	.ds.b	1
 opt_exp_flag:	.ds.b	1
+opt_omit_flag:	.ds.b	1
 
 		.quad
 sizeof_work_c:
@@ -451,21 +452,23 @@ option_loop:
 		beq	option_f		;-f-***
 
 		cmpi.b	#'a',d0
-		beq	option_a
+		beq	option_all
 		cmpi.b	#'b',d0
-		beq	option_b
+		beq	option_board
 		cmpi.b	#'c',d0
-		beq	option_c
+		beq	option_cut
 		cmpi.b	#'e',d0
-		beq	option_e
+		beq	option_expose
 		cmpi.b	#'h',d0
 		beq	print_long_help
 		cmpi.b	#'i',d0
 		beq	print_interrupt
 		cmpi.b	#'m',d0
-		beq	option_m
+		beq	option_m35
+		cmpi.b	#'o',d0
+		beq	option_omit
 		cmpi.b	#'p',d0
-		beq	option_p
+		beq	option_power
 		cmpi.b	#'s',d0
 		beq	print_scsi_info
 		cmpi.b	#'v',d0
@@ -475,34 +478,32 @@ option_loop:
 
 		bra	print_short_help
 
-option_all:	moveq	#0,d0
-option_a:	not.b	(opt_all_flag,a6)
+option_all:	not.b	(opt_all_flag,a6)
 		bra	@f
 
-option_board:	moveq	#0,d0
-option_b:	not.b	(opt_iob_flag,a6)
+option_board:	not.b	(opt_iob_flag,a6)
 		sf	(opt_pow_flag,a6)
 		bra	@f
 
-option_cut:	moveq	#0,d0
-option_c:	not.b	(opt_cut_flag,a6)
+option_cut:	not.b	(opt_cut_flag,a6)
 		bra	@f
 
-option_expose:	moveq	#0,d0
-option_e:	not.b	(opt_exp_flag,a6)
+option_expose:	not.b	(opt_exp_flag,a6)
 		bra	@f
 
-option_m35:	moveq	#0,d0
-option_m:	not.b	(opt_m35_flag,a6)
+option_m35:	not.b	(opt_m35_flag,a6)
 		bra	@f
 
-option_power:	moveq	#0,d0
-option_p:	not.b	(opt_pow_flag,a6)
+option_omit:	not.b	(opt_omit_flag,a6)
+		bra	@f
+
+option_power:	not.b	(opt_pow_flag,a6)
 		sf	(opt_iob_flag,a6)
-@@:		tst	d0
-		beq	arg_loop		;--all,--cut,--power
+@@:
+		tst	d0			;1文字オプションの文字
+		beq	arg_loop		;0ならロングオプション
 
-		bsr	GetArgChar		;-a,-c,-pなら続けて指定できる
+		bsr	GetArgChar		;1文字オプションなら続けて指定できる(例: -ac)
 		tst.b	d0
 		bne	option_loop
 		bra	arg_loop
@@ -552,6 +553,7 @@ search_long_option_nul:
 
 		addq.l	#LONG_OPT_MAX,sp	;オプションが見つかった
 		adda	(a2),a2
+		moveq	#0,d0			;ロングオプションモード
 		jmp	(a2)
 
 arg_end:
@@ -2364,6 +2366,9 @@ sram_unknown:	.dc.b	'???',0
 *└────────────────────────────────────────┘
 
 print_boot_count:
+		tst.b	(opt_omit_flag,a6)
+		bne	print_boot_count_end
+
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(pow_on_title,pc),a1
@@ -2379,6 +2384,8 @@ print_boot_count:
 		STRCPY_EOL a0
 		bsr	print_stack_buffer
 		lea	(256,sp),sp
+print_boot_count_end:
+print_bootinf_end:
 		rts
 
 
@@ -2392,6 +2399,9 @@ pow_on_title:
 *└────────────────────────────────────────┘
 
 print_bootinf:
+		tst.b	(opt_omit_flag,a6)
+		bne.s	print_bootinf_end
+
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(boot_title,pc),a1
@@ -2707,6 +2717,8 @@ is_exist_sxsi_false:
 		moveq	#0,d0
 @@:
 		POP	d1/d4/a0-a1
+print_ontime_end:
+print_runtime_end:
 		rts
 
 
@@ -2720,6 +2732,9 @@ scsi_sxsi:	.dc.b	'SxSI',0
 *└────────────────────────────────────────┘
 
 print_ontime:
+		tst.b	(opt_omit_flag,a6)
+		bne.s	print_ontime_end
+
 		IOCS	_ONTIME
 		move.l	d1,-(sp)
 		moveq	#100,d1
@@ -2742,6 +2757,9 @@ print_ontime:
 *└────────────────────────────────────────┘
 
 print_runtime:
+		tst.b	(opt_omit_flag,a6)
+		bne.s	print_runtime_end
+
 		moveq	#0,d4			;秒数=0
 		move.l	(SRAM_ONTIME),d0
 		moveq	#60,d1
@@ -2849,6 +2867,9 @@ error_title:	.dc.b	'error count ADDRESS/BUS	: ',0
 *└────────────────────────────────────────┘
 
 print_printer:
+		tst.b	(opt_omit_flag,a6)
+		bne	print_printer_end
+
 		lea	(-256,sp),sp
 		lea	(sp),a0
 		lea	(printer_title,pc),a1
@@ -2866,6 +2887,7 @@ print_printer:
 		bsr	print_stack_buffer
 print_printer_skip:
 		lea	(256,sp),sp
+print_printer_end:
 		rts
 
 
@@ -3177,34 +3199,11 @@ print_iob_no_ppi:
 ~a0:		.set	PPI_IO
 
 
-* FineScanner-X68 (#$0)
+* FineScanner-X68 (#$0 ～ #$3)
 		moveq	#$0,d0
-		moveq	#1-1,d1
-		bsr	print_iob_fs_sub
-
-
-* KeplerX (開発中仕様: $00ec1000-$00ec1fff)
-		lea	(KEPLERX_IO-~a0,a0),a0
-		bsr	check_bus_error_word
-		bne	print_iob_no_keplerx
-
-		lea	(b_keplerx,pc),a1
-		bsr	print_iob_sub
-
-		moveq	#$2,d0			;FineScanner-X68 #$1 は有り得ないので
-		moveq	#2-1,d1			;#$2,#$3 のみ確認する
-		bra	print_iob_fs23
-print_iob_no_keplerx:
-* a0 は破壊
-
-
-* FineScanner-X68 (#$1 ～ #$3)
-		moveq	#$1,d0
-		moveq	#3-1,d1
-print_iob_fs23:
+		moveq	#4-1,d1
 		bsr	print_iob_fs_sub
 print_iob_no_ppi_fs:
-* a0 は破壊
 
 
 * FineScanner-X68 (#$4 ～ #$7)
@@ -3220,19 +3219,34 @@ print_iob_no_ppi_fs:
 print_iob_no_ppi_fs2:
 * a0 は破壊
 
-
-* FineScanner-X68 (#$8 ～ #$b)
-*	Xellent30(#2)が存在すれば、FineScanner-X68(#$8～#$b)
-*	は有り得ない
-		lea	(XT30_IO2+$100),a0	;$ec8100.w
-		bsr	check_bus_error_word
-		beq	print_iob_no_fs3
-
-		moveq	#$8,d0
-		moveq	#4-1,d1
-		bsr	print_iob_fs_sub
-print_iob_no_fs3:
+*	Xellent30(#2)が存在すれば、FineScanner-X68(#$8～#$b)、
+*	KeplerXは有り得ない
 ~a0:		.set	XT30_IO2+$100
+		lea	(~a0),a0		;$ec8100.w
+		bsr	check_bus_error_word
+		beq	print_iob_no_fs_b
+
+* FineScanner-X68 (#$8 ～ #$a)
+		moveq	#$8,d0
+		moveq	#3-1,d1
+		bsr	print_iob_fs_sub
+
+* KeplerX (開発中仕様: $00ecb000-$00ecbfff)
+		lea	(KEPLERX_IO-~a0,a0),a0
+		bsr	check_bus_error_word
+		bne	print_iob_no_keplerx
+
+		lea	(b_keplerx,pc),a1
+		bsr	print_iob_sub
+		bra	print_iob_no_fs_b	;FineScanner-X68(#$b)は有り得ない
+print_iob_no_keplerx:
+
+* FineScanner-X68 (#$b)
+		moveq	#$b,d0
+		moveq	#1-1,d1
+		bsr	print_iob_fs_sub
+print_iob_no_fs_b:
+* a0 は破壊
 
 
 * Mercury-Unit / Neptune-X(Evolution) / VENUS-X / FineScanner-X68(#$c～#$f) / Nereid
@@ -3782,7 +3796,7 @@ b_gpib:		.dc.b	'$eafe00 ～ $eafe1f  GP-IB',0
 
 b_awe:		.dc.b	'$ec0000 ～ $ec8001  AWESOME-X',0
 b_ppi:		.dc.b	'$ec0000 ～ $ec0007  X68K-PPI',0
-b_keplerx:	.dc.b	'$ec1000 ～ $ec1fff  KeplerX',0
+b_keplerx:	.dc.b	'$ecb000 ～ $ecbfff  KeplerX',0
 b_mu:		.dc.b	'$ecc000 ～ $ecc0ff  Mercury-Unit',0
 b_nept:		.dc.b	'$ece000 ～ $ece3ff  Neptune-X (#0)',0
 b_nere:		.dc.b	'$ece300 ～ $ece3ff  Nereid (#0)',0
@@ -5271,6 +5285,7 @@ long_opt_table1:
 		.dc.b	'help',0
 		.dc.b	'int',0
 		.dc.b	'm35',0
+		.dc.b	'omit',0
 		.dc.b	'power',0
 		.dc.b	'scsi',0
 		.dc.b	'version',0
@@ -5285,6 +5300,7 @@ long_opt_table2:
 		.dc	print_long_help-$
 		.dc	print_interrupt-$
 		.dc	option_m35-$
+		.dc	option_omit-$
 		.dc	option_power-$
 		.dc	print_scsi_info-$
 		.dc	print_version-$
@@ -5313,7 +5329,7 @@ version_mes:
 		.dc.b	LF,0
 
 usage_mes:
-		.dc.b	'usage : si [-a,-c,-e,-i,-m,-p,-s,'
+		.dc.b	'usage : si [-a,-c,-e,-i,-m,-o,-p,-s,'
 		.dc.b		'-f-(cs,emu,fpu,memf,merc,midi,mmu,mpu,ms)]',LF
 		.dc.b	0
 
@@ -5325,6 +5341,7 @@ switch_mes:
 		.dc.b	'	-e  --expose	expose private data (MAC address)',LF
 		.dc.b	'	-i  --int	check interrupt',LF
 		.dc.b	'	-m  --m35	check Mercury-Unit v3.5',LF
+		.dc.b	'	-o  --omit	omit unimportant items',LF
 		.dc.b	'	-p  --power	benchmark only',LF
 		.dc.b	'	-s  --scsi	SCSI check',LF
 		.dc.b	'	-l  --license	print license',LF

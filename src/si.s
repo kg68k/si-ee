@@ -2996,7 +2996,6 @@ print_iob_no_nereid:
 print_iob_ga_exist:
 		bsr	print_iob_sub
 print_iob_no_ts6bga:
-* a0 は破壊
 
 
 * SCSI ボード
@@ -3051,7 +3050,6 @@ print_iob_ts6bs1mk3:
 @@:
 		bsr	print_iob_sub
 print_iob_scsiex_end:
-* a0 は破壊
 
 
 * FAX ボード
@@ -3062,7 +3060,6 @@ print_iob_scsiex_end:
 		lea	(b_fax,pc),a1
 		bsr	print_iob_sub
 print_iob_no_fax:
-~a0:		.set	FAX_IO
 
 
 * MIDI ボード (#0 / #1)
@@ -3081,7 +3078,7 @@ print_iob_midi_loop:
 
 
 * パラレルボード (#0 / #1)
-		lea	(PARA0_IO-~a0,a0),a0
+		lea	(PARA0_IO),a0
 		lea	(b_para,pc),a1
 		moveq	#2-1,d2
 print_iob_para_loop:
@@ -3093,11 +3090,10 @@ print_iob_para_loop:
 		bsr	print_iob_inc_id2
 		dbra	d2,print_iob_para_loop
 *print_iob_no_para:
-~a0:		.set	PARA0_IO+(PARA1_IO-PARA0_IO)*2
 
 
 * RS-232C ボード (#0 / #1 / #2 / #3)
-		lea	(RS232C0_IO-~a0,a0),a0
+		lea	(RS232C0_IO),a0
 		lea	(b_rs232c,pc),a1
 		moveq	#4-1,d2
 print_iob_rs_loop:
@@ -3109,11 +3105,10 @@ print_iob_rs_loop:
 		bsr	print_iob_inc_id2
 		dbra	d2,print_iob_rs_loop
 *print_iob_no_rs:
-~a0:		.set	RS232C0_IO+(RS232C1_IO-RS232C0_IO)*4
 
 
 * ユニバーサル I/O ボード (#$00 ～ #$3f)
-		lea	(U_IO0_IO-~a0,a0),a0
+		lea	(U_IO0_IO),a0
 		lea	(b_u_io,pc),a1
 		moveq	#$40-1,d2
 print_iob_uio_loop:
@@ -3151,20 +3146,16 @@ print_iob_uio_next:
 		addq.l	#U_IO1_IO-U_IO0_IO,a0
 		dbra	d2,print_iob_uio_loop
 *print_iob_no_uio:
-~a0:		.set	U_IO0_IO+(U_IO1_IO-U_IO0_IO)*$40
 
 
 * GP-IB ボード
-.if ~a0.ne.GPIB_IO
-		lea	(GPIB_IO-~a0,a0),a0
-.endif
+		lea	(GPIB_IO),a0
 		bsr	check_bus_error_byte
 		bne	print_iob_no_gpib
 
 		lea	(b_gpib,pc),a1
 		bsr	print_iob_sub
 print_iob_no_gpib:
-~a0:		.set	GPIB_IO
 
 
 * AWESOME-X
@@ -3185,18 +3176,16 @@ print_iob_no_awe:
 		lea	(XT30_IO0+8),a0		;$ec0008.w
 		bsr	check_bus_error_word
 		beq	print_iob_no_ppi_fs	;Xellent30(#0)有り
-~a0:		.set	XT30_IO0+8
 
 
 * X68K-PPI
-		subq.l	#~a0-PPI_IO,a0
-		bsr	check_bus_error_byte	;$ec0006.b
+		lea	(PPI_IO),a0
+		bsr	check_bus_error_byte
 		bne	print_iob_no_ppi
 
 		lea	(b_ppi,pc),a1
 		bsr	print_iob_sub
 print_iob_no_ppi:
-~a0:		.set	PPI_IO
 
 
 * FineScanner-X68 (#$0 ～ #$3)
@@ -3217,12 +3206,10 @@ print_iob_no_ppi_fs:
 		moveq	#4-1,d1
 		bsr	print_iob_fs_sub
 print_iob_no_ppi_fs2:
-* a0 は破壊
 
 *	Xellent30(#2)が存在すれば、FineScanner-X68(#$8～#$b)、
 *	KeplerXは有り得ない
-~a0:		.set	XT30_IO2+$100
-		lea	(~a0),a0		;$ec8100.w
+		lea	(XT30_IO2+$100),a0
 		bsr	check_bus_error_word
 		beq	print_iob_no_fs_b
 
@@ -3232,7 +3219,7 @@ print_iob_no_ppi_fs2:
 		bsr	print_iob_fs_sub
 
 * KeplerX (開発中仕様: $00ecb000-$00ecbfff)
-		lea	(KEPLERX_IO-~a0,a0),a0
+		lea	(KEPLERX_IO),a0
 		bsr	check_bus_error_word
 		bne	print_iob_no_keplerx
 
@@ -3246,7 +3233,6 @@ print_iob_no_keplerx:
 		moveq	#1-1,d1
 		bsr	print_iob_fs_sub
 print_iob_no_fs_b:
-* a0 は破壊
 
 
 * Mercury-Unit / Neptune-X(Evolution) / VENUS-X / FineScanner-X68(#$c～#$f) / Nereid
@@ -3289,7 +3275,7 @@ print_iob_no_mu:
 * 4.Nereid (#1)
 
 * Nereid (#0)
-		lea	(NEREID0_REG-~a0,a0),a0	;print_iob_ne_mac 用
+		lea	(NEREID0_REG),a0	;print_iob_ne_mac 用
 		moveq	#0,d0
 		btst	d0,d7
 		beq	print_iob_no_nere0
@@ -3299,9 +3285,8 @@ print_iob_no_mu:
 		bsr	print_iob_sub2
 		bra	print_iob_no_nept0
 print_iob_no_nere0:
-~a0:		.set	NEREID0_REG
 * Neptune-X(Evolution) (#0)
-		lea	(NEPTUNE0_IO-~a0,a0),a0	;print_iob_ne_mac 用
+		lea	(NEPTUNE0_IO),a0	;print_iob_ne_mac 用
 		bsr	check_bus_error_byte
 		bne	print_iob_no_nept0
 
@@ -3309,7 +3294,6 @@ print_iob_no_nere0:
 		bsr	print_iob_nept_sub
 		bsr	print_iob_sub2
 print_iob_no_nept0:
-* a0 は破壊
 
 * Neptune-X(Evolution) (#1)
 		lea	(NEPTUNE1_IO),a0
@@ -3320,10 +3304,9 @@ print_iob_no_nept0:
 		bsr	print_iob_nept_sub
 		bsr	print_iob_sub2
 print_iob_no_nept1:
-~a0:		.set	NEPTUNE1_IO
 
 * Nereid (#1)
-		lea	(NEREID1_REG-~a0,a0),a0	;print_iob_ne_mac 用
+		lea	(NEREID1_REG),a0	;print_iob_ne_mac 用
 		moveq	#4,d0
 		btst	d0,d7
 		beq	print_iob_no_nere1
@@ -3332,7 +3315,6 @@ print_iob_no_nept1:
 		bsr	print_iob_nereid_sub	;Nereid #1
 		bsr	print_iob_sub2
 print_iob_no_nere1:
-~a0:		.set	NEREID1_REG
 
 
 * FineScanner-X68 (#$e ～ #$f) / バンクメモリ
@@ -3354,18 +3336,15 @@ print_iob_no_nere1:
 		tst	d0
 		bmi	print_iob_no_bankram	;FineScanner-X68(#$f) あり
 
-		lea	(BANK_REG-~a0,a0),a0
+		lea	(BANK_REG),a0
 		bsr	check_bus_error_byte
 		bne	print_iob_no_bankram
 
 		lea	(b_bank,pc),a1
 		bsr	print_iob_sub
 print_iob_no_bankram:
-~a0:		.set	BANK_REG
-
 
 print_iob_no_mu_ne:
-* a0 は破壊
 
 
 * $ee0000 ～ $efffff
@@ -3392,7 +3371,6 @@ print_iob_poly_loop:
 		bsr	print_iob_inc_id
 		dbra	d2,print_iob_poly_loop
 *print_iob_no_awe:
-~a0:		.set	POLY0_IO+(POLY1_IO-POLY0_IO)*2
 
 
 * PSX16550
@@ -3436,9 +3414,7 @@ print_iob_psx7_loop:
 @@:
 *print_iob_no_psx7:
 
-
 print_iob_no_poly_psx:
-* a0 は破壊
 
 
 * ボードが一枚もなかった時の処理

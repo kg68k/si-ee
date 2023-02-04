@@ -830,11 +830,17 @@ get_hostname_noenv:
 		rts
 
 
-ROM_EMBED_NAME_MAX:	.equ	32-4-4	;ヘッダ'NAME'と予約4バイトを除く
+ROM_EMBED_ID:	.equ	$00ffffe0
+ROM_EMBED_NAME:	.equ	$00ffffe4
+ROM_EMBED_EMU:	.equ	$00fffffe
+ROM_EMBED_MODEL:.equ	$00ffffff
+
+ROM_EMBED_ID_STR:	.equ	'NAME'
+ROM_EMBED_NAME_MAX:	.equ	ROM_EMBED_EMU-ROM_EMBED_NAME
 
 * ROM埋め込み機種名を取得する
 get_rom_embedded_model_name:
-		lea	($ffffe0),a1
+		lea	(ROM_EMBED_ID),a1
 		cmpi.l	#'NAME',(a1)+
 		bne	8f
 

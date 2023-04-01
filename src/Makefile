@@ -26,7 +26,8 @@ ARCS	= $(SRC_ZIP) $(SI_ZIP)
 all: $(SI_R)
 
 
-$(SI_ZIP): $(SRC_ZIP) $(SI_TXT) $(SI_R)
+#$(SI_ZIP): $(SRC_ZIP) $(SI_TXT) $(SI_R)
+$(SI_ZIP): $(SI_TXT) $(SI_R)
 	rm -f $@
 	zip -9 $@ $^
 

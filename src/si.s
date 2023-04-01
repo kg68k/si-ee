@@ -4650,8 +4650,9 @@ emu_type_conv_table:
 		.dc.b	EMU_WXCE
 		.dc.b	EMU_XM6W
 		.dc.b	EMU_XM6I
-		.dc.b	EMU_XM6W	;8 XM6g
-		.dc.b	EMU_REAL	;9 XEiJ
+		.dc.b	EMU_XM6W	; 8 XM6g
+		.dc.b	EMU_REAL	; 9 XEiJ
+		.dc.b	EMU_REAL	;10 X68000 Z
 		.even
 
 

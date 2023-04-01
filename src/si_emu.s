@@ -3,10 +3,8 @@
 .include si.mac
 .include doscall.mac
 
-.xref check_bus_error_byte
-.xref check_bus_error_long
 
-
+SYSPORT_E8E001_P1: .equ $e8e001
 SYSPORT_E8E00B_P6: .equ $e8e00b
 SYSPORT_E8E00D_P7: .equ $e8e00d
 
@@ -25,6 +23,7 @@ EMULATOR_XM6::       .equ 6
 EMULATOR_XM6I::      .equ 7
 EMULATOR_XM6G::      .equ 8
 EMULATOR_XEIJ::      .equ 9
+EMULATOR_X68Z::      .equ 10
 .fail EMULATOR_REAL.ne.0
 
 
@@ -34,7 +33,7 @@ EMULATOR_XEIJ::      .equ 9
 ;エミュレータの種類を調べる。
 ;  スーパーバイザモードで呼び出すこと。
 ;out d0.hw ... バージョン
-;    d0.w .... 種類(0-9)
+;    d0.w .... 種類(0-10)
 Emulator_GetType::
   PUSH d1/a0
 
@@ -47,33 +46,42 @@ Emulator_GetType::
   bsr getWinSCVersion
   bne 9f
 
-  ;XEiJ HFS と EX68 WINPORT は、040Excel(試作版)が$e9f000-$00e9f7ffで競合するが割愛
+  ;XEiJ HFSとEX68 WINPORTは、040Excel(試作版)が$e9f000-$00e9f7ffで競合するが割愛
 
   ;XEiJ (X68000 Emulator in Java)
   lea (XEIJ_E9F03C_HFS_MAGIC),a0
-  bsr check_bus_error_long
+  bsr DosBusErrLong
   bne @f
     moveq #EMULATOR_XEIJ,d1
     cmpi.l #'JHFS',d0
     beq 8f
   @@:
 
-  ;WINPORTが読めなければ実機
+  ;WINPORTが読めればエミュ確定
   lea (WINPORT_E9F000),a0
-  moveq #EMULATOR_REAL,d1
-  bsr check_bus_error_byte
-  bne 8f
+  bsr DosBusErrByte
+  beq 1f
 
+    ;$e8e000.bが%0000_xxxxならX68000 Z(xxxxはコントラスト、実機は$ff)
+    moveq #EMULATOR_X68Z,d1
+    moveq #$f0,d0
+    and.b (SYSPORT_E8E001_P1-1),d0
+    beq 8f
+
+    ;実機
+    moveq #EMULATOR_REAL,d1
+    bra 8f
+1:
   ;EX68
   moveq #EMULATOR_EX68,d1
   tst.b (SYSPORT_E8E00B_P6)
   beq 8f
 
-  ;Mercury-Unit がなければ XM6 v0.90 未満
-  ;  この時点で XM6 or WinX68k or WinX68030 なので、実機としての Xellent30(#3) の存在確認は不要
+  ;Mercury-UnitがなければXM6 v0.90未満
+  ;  この時点でXM6 or WinX68k or WinX68030なので、実機としてのXellent30(#3)の存在確認は不要
   moveq #EMULATOR_XM6,d1
   lea (MU_ECC091_COMMAND),a0
-  bsr check_bus_error_byte
+  bsr DosBusErrByte
   bne 8f
 
   ;Mercury-Unit があれば WinX68k / WinX68030
@@ -82,6 +90,7 @@ Emulator_GetType::
   move.l d1,d0  ;バージョン番号なし
 9:
   POP d1/a0
+  tst.l d0
   rts
 
 
@@ -199,7 +208,7 @@ Emulator_ToString::
   POP d1-d3/a1
   rts
 
-emuNameOffs: .dc.b @f-$,1f-$,2f-$,3f-$,4f-$,5f-$,6f-$,7f-$,8f-$,9f-$
+emuNameOffs: .dc.b @f-$,1f-$,2f-$,3f-$,4f-$,5f-$,6f-$,7f-$,8f-$,9f-$,10f-$
 @@: .dc.b 'real machine',0
 1:  .dc.b 'EX68',0
 2:  .dc.b 'WinX68k',0
@@ -210,6 +219,7 @@ emuNameOffs: .dc.b @f-$,1f-$,2f-$,3f-$,4f-$,5f-$,6f-$,7f-$,8f-$,9f-$
 7:  .dc.b 'XM6i',0
 8:  .dc.b 'XM6 TypeG',0
 9:  .dc.b 'XEiJ',0
+10: .dc.b 'X68000 Z',0
 version: .dc.b ' version ',0
 .even
 
@@ -232,6 +242,10 @@ versionToString:
   add.b d2,d3
   move.b d3,(a1)+
   rts
+
+
+  DEFINE_DOSBUSERRBYTE DosBusErrByte
+  DEFINE_DOSBUSERRLONG DosBusErrLong
 
 
 .end

@@ -134,6 +134,19 @@ STRLEN: .macro areg,dreg
 .endm
 
 
+DEFINE_DOSBUSERRBYTE: .macro label
+.xref label
+.endm
+
+DEFINE_DOSBUSERRWORD: .macro label
+.xref label
+.endm
+
+DEFINE_DOSBUSERRLONG: .macro label
+.xref label
+.endm
+
+
 .endif
 
 .list

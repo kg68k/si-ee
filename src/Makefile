@@ -4,7 +4,7 @@ ifeq ($(notdir $(CURDIR)),src)
 $(error do not execute make in src directory)
 endif
 
-AS	= has
+AS	= has060
 ASFLAGS	= -d
 LD	= hlk
 LD_R	= $(LD) -r
@@ -26,7 +26,6 @@ ARCS	= $(SRC_ZIP) $(SI_ZIP)
 all: $(SI_R)
 
 
-#$(SI_ZIP): $(SRC_ZIP) $(SI_TXT) $(SI_R)
 $(SI_ZIP): $(SI_TXT) $(SI_R)
 	rm -f $@
 	zip -9 $@ $^

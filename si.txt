@@ -9,7 +9,7 @@
 │		       Copyright (C)1997 Arisugawa Seara		    │
 │									    │
 │		      System Information Extended Edition		    │
-│			Copyright (C)1999-2022 TcbnErik			    │
+│			Copyright (C)1999-2024 TcbnErik			    │
 └─────────────────────────────────────┘
 
 

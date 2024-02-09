@@ -22,7 +22,7 @@ SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s si_memory.s si_
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x
-SI_TXT	= si.txt
+DOCS	= si.txt changelog.txt
 
 SI_ZIP	= siee.zip
 
@@ -33,11 +33,14 @@ all: $(SI_R)
 
 archive: $(SI_ZIP)
 
-$(SI_ZIP): $(SI_R) $(SI_TXT)
+$(SI_ZIP): $(SI_R) $(DOCS)
 	rm -f $@
 	zip -9 $@ $^
 
-$(SI_TXT): $(SRC_DIR)/../si.txt
+si.txt: $(SRC_DIR)/../si.txt
+	$(U8TOSJ) < $^ >! $@
+
+changelog.txt: $(SRC_DIR)/../CHANGELOG.md
 	$(U8TOSJ) < $^ >! $@
 
 
@@ -58,6 +61,6 @@ install:
 	cp $(SI_TXT) $(MANDIR)
 
 clean:
-	rm -f si.[xr] $(OBJS) $(ARCS)
+	rm -f $(SI_ZIP) $(DOCS) $(SI_R) $(SI_X) $(OBJS)
 
 # EOF

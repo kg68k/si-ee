@@ -13,26 +13,32 @@ LDFLAGS	=
 BINDIR	= /usr/local/bin
 MANDIR	= /usr/local/man/cat1
 
+U8TOSJ = u8tosj
+SRCDIR_MK = ../srcdir.mk
+SRC_DIR = ../src
+-include $(SRCDIR_MK)
+
 SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s si_memory.s si_scsiex.s si_sram.s
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x
 SI_TXT	= si.txt
 
-SRC_ZIP	= src.zip
-SI_ZIP	= si.zip
-ARCS	= $(SRC_ZIP) $(SI_ZIP)
+SI_ZIP	= siee.zip
 
+
+.PHONY: all archive install clean
 all: $(SI_R)
 
 
-$(SI_ZIP): $(SI_TXT) $(SI_R)
+archive: $(SI_ZIP)
+
+$(SI_ZIP): $(SI_R) $(SI_TXT)
 	rm -f $@
 	zip -9 $@ $^
 
-$(SRC_ZIP): Makefile si.mac si_ver.mac $(SRCS)
-	rm -f $@
-	zip -9 $@ $^
+$(SI_TXT): $(SRC_DIR)/../si.txt
+	$(U8TOSJ) < $^ >! $@
 
 
 $(SI_R): $(OBJS)
@@ -53,6 +59,5 @@ install:
 
 clean:
 	rm -f si.[xr] $(OBJS) $(ARCS)
-
 
 # EOF

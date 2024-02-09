@@ -965,7 +965,7 @@ px_mpu:		.dc.b	', MPU ',0
 px_wait:	.dc.b	', wait ',0
 px_fdd_swap:	.dc.b	', FDD swap ',0
 px_temp0:	.dc.b	', SOC ',0
-px_temp1:	.dc.b	'℃',LF,0
+px_temp1:	.dc.b	' ℃',LF,0
 		.even
 
 

@@ -15,10 +15,6 @@
 * Global Symbol ------------------------------- *
 
 * si_util.s
-		.xref	check_bus_error_byte
-		.xref	check_bus_error_word
-		.xref	check_bus_error_long
-
 		.xref	hex_table
 		.xref	hexstr_byte
 		.xref	hexstr_word
@@ -647,7 +643,7 @@ init_misc:
 		move.l	d0,(rom_version,a6)
 
 		lea	(XT30_IO3+$100),a0	;$ecc100.w
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		seq	(xt30_id3,a6)
 
 		bsr	Emulator_GetType
@@ -876,17 +872,17 @@ is_exist_jupiter_s:
 		cmpi.b	#ROMVER_XVI>>24,(rom_version,a6)
 		bne	@f
 		lea	($ff121c-$ff0fdc,a0),a0
-@@:		bsr	check_bus_error_word
+@@:		bsr	DosBusErrWord
 		cmpi	#JMP_ABSL,d0
 		bne	is_exist_js_false	;ドライバ組み込みなし
 
 		addq.l	#2,a0
-		bsr	check_bus_error_long	;分岐先アドレス
+		bsr	DosBusErrLong		;分岐先アドレス
 		movea.l	d0,a0
 		addq.l	#8,a0
 		moveq	#20-1,d1
 @@:
-		bsr	check_bus_error_long
+		bsr	DosBusErrLong
 		bne	is_exist_js_false
 		cmpi.l	#JUPITER_SYSREG,d0
 		beq	is_exist_js_true
@@ -1563,18 +1559,18 @@ is_exist_venus_x:
 		bne	is_exist_vx_false	;Xellent30 が存在すれば VENUS-X は無し
 
 		lea	(VX_CTRL),a0
-		bsr	check_bus_error_long	;制御レジスタ
+		bsr	DosBusErrLong		;制御レジスタ
 		bne	is_exist_vx_false
 		move.l	d0,d1
 	.irp	id,'V','X'
 		addq.l	#4,a0
-		bsr	check_bus_error_long	;ID レジスタ
+		bsr	DosBusErrLong		;ID レジスタ
 		bne	is_exist_vx_false
 		cmpi.b	#id,d0
 		bne	is_exist_vx_false
 	.endm
 		addq.l	#4,a0
-		bsr	check_bus_error_long
+		bsr	DosBusErrLong
 		bne	is_exist_vx_false
 		move.l	d0,d2			;ファームウェアリビジョン
 		moveq	#1,d0
@@ -1801,7 +1797,7 @@ get_fpu_type_030:
 
 get_fpu_type_io:
 		lea	(IOFPU0),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	@f
 
 		addq	#1<<FPU_IO1,d6
@@ -1810,7 +1806,7 @@ get_fpu_type_io:
 		addq	#1<<FPU_IO1,d7
 @@:
 		lea	(IOFPU1-IOFPU0,a0),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	@f
 
 		addq	#1<<FPU_IO2,d6
@@ -2633,13 +2629,13 @@ scsi_level_to_str2:
 is_exist_builtin_scsi:
 		move.l	a0,-(sp)
 		lea	(SCSIIN_ID),a0
-		bsr	check_bus_error_long
+		bsr	DosBusErrLong
 		bne	is_exist_scsiin_false
 		cmpi.l	#'SCSI',d0
 		bne	is_exist_scsiin_false
 
 		addq.l	#4,a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	is_exist_scsiin_false
 		cmp	#'IN',d0
 		bne	is_exist_scsiin_false
@@ -2702,12 +2698,12 @@ is_exist_sxsi_check:
 		bne	is_exist_sxsi_false	;SxSI は必ずレベル 1
 
 		lea	(-$78,a1),a0
-		bsr	check_bus_error_long
+		bsr	DosBusErrLong
 		bne	is_exist_sxsi_false
 		cmpi.l	#'*SAS',d0
 		bne	is_exist_sxsi_false
 		addq.l	#4,a0
-		bsr	check_bus_error_long
+		bsr	DosBusErrLong
 		bne	is_exist_sxsi_false
 		cmpi.l	#'ITRP',d0
 		bne	is_exist_sxsi_false
@@ -2961,10 +2957,10 @@ print_io_board:
 		bne	print_iob_no_nereid
 
 		lea	(NEPTUNE0_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		lea	(NEREID0_REG-NEPTUNE0_IO,a0),a0
 		beq	@f			;Neptune だった
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f			;Nereid #0 無し
 
 		move.b	(a0),d7			;有り
@@ -2973,7 +2969,7 @@ print_io_board:
 @@:		ror	#4,d7
 
 		lea	(NEREID1_REG-NEREID0_REG,a0),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f			;Nereid #1 無し
 
 		move.b	(a0),d7			;有り
@@ -3013,7 +3009,7 @@ print_iob_no_ts6bga:
 
 * SCSIボードなし
 		lea	(TS6BSI_P_ID),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_scsiex_end
 
 		lea	(b_ts6bsi_p,pc),a1	;TS-6BS1mkIII のパラレルポート
@@ -3050,7 +3046,7 @@ print_iob_no_ts6bga:
 print_iob_ts6bs1mk3:
 		lea	(b_ts6bsi,pc),a1
 		lea	(TS6BSI_P_ID),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		beq	@f
 		clr.b	(b_ts6bsi_1-b_ts6bsi,a1)	;パラレルポートなし
 @@:
@@ -3060,7 +3056,7 @@ print_iob_scsiex_end:
 
 * FAX ボード
 		lea	(FAX_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_fax
 
 		lea	(b_fax,pc),a1
@@ -3088,7 +3084,7 @@ print_iob_midi_loop:
 		lea	(b_para,pc),a1
 		moveq	#2-1,d2
 print_iob_para_loop:
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f
 		bsr	print_iob_sub
 @@:
@@ -3103,7 +3099,7 @@ print_iob_para_loop:
 		lea	(b_rs232c,pc),a1
 		moveq	#4-1,d2
 print_iob_rs_loop:
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	@f
 		bsr	print_iob_sub
 @@:
@@ -3118,7 +3114,7 @@ print_iob_rs_loop:
 		lea	(b_u_io,pc),a1
 		moveq	#$40-1,d2
 print_iob_uio_loop:
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_uio_next
 
 		movea.l	a0,a2			;save a0
@@ -3156,7 +3152,7 @@ print_iob_uio_next:
 
 * GP-IB ボード
 		lea	(GPIB_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_gpib
 
 		lea	(b_gpib,pc),a1
@@ -3180,13 +3176,13 @@ print_iob_no_awe:
 *	Xellent30(#0)が存在すれば、X68K-PPI 及び FineScanner-X68(#$0～#$3)
 *	は有り得ない
 		lea	(XT30_IO0+8),a0		;$ec0008.w
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	print_iob_no_ppi_fs	;Xellent30(#0)有り
 
 
 * X68K-PPI
 		lea	(PPI_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_ppi
 
 		lea	(b_ppi,pc),a1
@@ -3205,7 +3201,7 @@ print_iob_no_ppi_fs:
 *	Xellent30(#1)が存在すれば、FineScanner-X68(#$4～#$7)
 *	は有り得ない
 		lea	(XT30_IO1+$100),a0	;$ec4100.w
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	print_iob_no_ppi_fs2
 
 		moveq	#$4,d0
@@ -3216,7 +3212,7 @@ print_iob_no_ppi_fs2:
 *	Xellent30(#2)が存在すれば、FineScanner-X68(#$8～#$b)、
 *	KeplerXは有り得ない
 		lea	(XT30_IO2+$100),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	print_iob_no_fs_b
 
 * FineScanner-X68 (#$8 ～ #$a)
@@ -3226,7 +3222,7 @@ print_iob_no_ppi_fs2:
 
 * KeplerX (開発中仕様: $00ecb000-$00ecbfff)
 		lea	(KEPLERX_IO),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	print_iob_no_keplerx
 
 		lea	(b_keplerx,pc),a1
@@ -3293,7 +3289,7 @@ print_iob_no_mu:
 print_iob_no_nere0:
 * Neptune-X(Evolution) (#0)
 		lea	(NEPTUNE0_IO),a0	;print_iob_ne_mac 用
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_nept0
 
 		moveq	#0,d0			;Neptune #0
@@ -3303,7 +3299,7 @@ print_iob_no_nept0:
 
 * Neptune-X(Evolution) (#1)
 		lea	(NEPTUNE1_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_nept1
 
 		moveq	#1,d0			;Neptune #1
@@ -3343,7 +3339,7 @@ print_iob_no_nere1:
 		bmi	print_iob_no_bankram	;FineScanner-X68(#$f) あり
 
 		lea	(BANK_REG),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_no_bankram
 
 		lea	(b_bank,pc),a1
@@ -3367,7 +3363,7 @@ print_iob_no_mu_ne:
 		lea	(b_poly,pc),a1
 		moveq	#2-1,d2
 print_iob_poly_loop:
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	@f
 		bsr	print_iob_sub
 @@:
@@ -3491,7 +3487,7 @@ is_exist_ts6bga:
 		PUSH	d6/a0
 		moveq	#0,d6
 		lea	(TS6BGA_PCMCTRL),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	is_exist_ga_end		;TS-6BGA 無し
 
 		moveq	#%1011<<0,d0
@@ -3505,7 +3501,7 @@ is_exist_ts6bga:
 
 		moveq	#%001,d6
 		lea	(TS6BGA_EE0000),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	is_exist_ga_end		;TS-6BGA (G-RAM #0)有り
 is_exist_ga_no_ee:
 		moveq	#%1011<<0,d0
@@ -3519,7 +3515,7 @@ is_exist_ga_no_ee:
 
 		moveq	#%101,d6
 		lea	(TS6BGA_EF0000),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	is_exist_ga_end		;TS-6BGA (G-RAM #1)有り
 is_exist_ga_no_ef:
 		moveq	#%011,d6		;ispr16bitPCMBoard 有り
@@ -3534,14 +3530,14 @@ is_exist_ts6bga_old:
 		moveq	#0,d7
 
 		lea	(TS6BGA_PCMCTRL),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	is_exist_ga_end
 
 		lea	(TS6BGA_EE0000),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		beq	@f			;bank #0
 		lea	(TS6BGA_EF0000),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		bne	is_exist_ga_end
 		addq	#1<<2,d7		;bank #1
 @@:
@@ -3720,7 +3716,7 @@ print_iob_fs_loop:
 		ror	#4,d0			;lsl #12,d0
 		lea	(F_SCAN_IO),a0
 		adda.l	d0,a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	print_iob_fs_next
 
 		lea	(-256,sp),sp
@@ -3832,7 +3828,7 @@ is_exist_psx16550:
 		moveq	#0,d1
 		moveq	#PSX16550_MAX-1,d2
 is_exist_psx16550_loop:
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f			;未実装
 		addq.b	#1,d0
 		bne	@f			;PSX16750 だった
@@ -3864,7 +3860,7 @@ is_exist_psx16750:
 		moveq	#0,d1
 		moveq	#PSX16570_MAX-1,d2
 is_exist_psx16750_loop:
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f			;未実装
 		addq.b	#1,d0
 		beq	@f			;PSX16550 だった
@@ -4506,12 +4502,12 @@ is_exist_midi:
 		PUSH	d1/a0
 		moveq	#0,d1
 		lea	(MIDI0_IO),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f
 		addq	#%01,d1
 @@:
 		lea	(MIDI1_IO-MIDI0_IO,a0),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	@f
 		addq	#%10,d1
 @@:
@@ -4589,12 +4585,12 @@ is_exist_mercury_unit:
 		bne	is_exist_mu_end		;Xellent30 が存在すれば MU は無し
 
 		lea	(MU_COMMAND),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		bne	is_exist_mu_end
 
 		moveq	#MERC_V3,d1
 		lea	(MU_TOP-MU_COMMAND,a0),a0
-		bsr	check_bus_error_byte
+		bsr	DosBusErrByte
 		beq	is_exist_mu_end		;アクセス出来れば ～V3.5
 
 * V4 の OPNA 無し/有りを判別
@@ -5164,7 +5160,7 @@ print_int_printer:
 
 print_int_spurious:
 		movea.l	(SPURIOUS_VEC*4),a0
-		bsr	check_bus_error_word
+		bsr	DosBusErrWord
 		lea	(int_spurious,pc),a0
 		lea	(spr_notmask,pc),a1
 		bne	@f

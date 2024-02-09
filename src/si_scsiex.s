@@ -2,10 +2,6 @@
 
 .include si.mac
 
-.xref check_bus_error_byte
-.xref check_bus_error_word
-.xref check_bus_error_long
-
 
 SCSIEX_LIST: .macro op
   item: .macro type,symbol,rom,name
@@ -63,7 +59,7 @@ Scsiex_GetType::
     ;SCSIEX ROMなし
     moveq #SCSIEX_NONE,d2
     lea (~SCSIEX_PSNS,a5),a0
-    bsr check_bus_error_byte
+    bsr DosBusErrByte
     bne 8f  ;SPC(MB89352)なし
 
     moveq #SCSIEX_SPC,d0  ;SPCボードあり
@@ -90,13 +86,13 @@ Scsiex_GetType::
 ;break a0
 verifyScsiexId:
   lea (~SCSIEX_ID,a5),a0
-  bsr check_bus_error_long
+  bsr DosBusErrLong
   bne 2f
   cmpi.l #'SCSI',d0
   bne 1f
 
   addq.l #4,a0
-  bsr check_bus_error_word
+  bsr DosBusErrWord
   bne 2f
   cmpi #'EX',d0
   bne 1f
@@ -203,7 +199,7 @@ RomReader_ReadLong:
     move.l (RomReader_VALUE,a4,d1.w),d0  ;キャッシュ済みアドレスだった
     bra 9f
   @@:
-  bsr check_bus_error_long
+  bsr DosBusErrLong
   beq @f
     moveq #0,d0
   @@:

@@ -20,7 +20,7 @@
 * out	d0.bwl	読み込んだデータ
 *	ccr	Z=1:正常終了 Z=0:バスエラーが発生した
 
-check_bus_error_byte::
+DosBusErrByte::
 		move	#1,-(sp)
 		move.l	sp,-(sp)
 		move.l	a0,-(sp)
@@ -32,7 +32,7 @@ check_bus_error_byte::
 		addq.l	#10-4,sp
 		rts
 
-check_bus_error_word::
+DosBusErrWord::
 		move	#2,-(sp)
 		move.l	sp,-(sp)
 		move.l	a0,-(sp)
@@ -44,7 +44,7 @@ check_bus_error_word::
 		addq.l	#10-4,sp
 		rts
 
-check_bus_error_long::
+DosBusErrLong::
 		move	#4,-(sp)
 		subq.l	#4,sp
 		move.l	sp,(sp)
@@ -55,22 +55,6 @@ check_bus_error_long::
 		tst.l	(sp)+
 		addq.l	#10-4,sp
 		rts
-
-* 指定アドレスから読み書きしてバスエラーが発生するか調べる
-* in	a0.l	アドレス
-* out	d0.l	0:OK 1:Write Error 2:Read Error -1:Arg Error
-*	ccr	Z=1:正常終了 Z=0:バスエラーが発生した
-
-	.if	0
-check_bus_error_byte_rw::
-		move	#1,-(sp)
-		move.l	a0,-(sp)
-		move.l	a0,-(sp)
-		DOS	_BUS_ERR
-		addq.l	#10-4,sp
-		move.l	d0,(sp)+
-		rts
-	.endif
 
 
 * 数値を 16 進数文字列に変換する -------------- *

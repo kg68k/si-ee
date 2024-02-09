@@ -2,8 +2,6 @@
 
 .include si.mac
 
-.xref check_bus_error_long
-
 
 SRAM_ED0000_START:     .equ $ed0000
 SRAM_ED002D_SRAM_USE:  .equ $ed002d
@@ -60,7 +58,7 @@ Sram_GetSize::
   PUSH d1/a0
   lea (SRAM_ED4000_END),a0
   @@:
-    bsr check_bus_error_long
+    bsr DosBusErrLong
     bne @f
       lea (1024,a0),a0
     cmpa.l #SRAM_EE0000_END_MAX,a0

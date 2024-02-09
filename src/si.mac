@@ -135,16 +135,15 @@ STRLEN: .macro areg,dreg
 
 
 DEFINE_DOSBUSERRBYTE: .macro label
-.xref label
 .endm
-
 DEFINE_DOSBUSERRWORD: .macro label
-.xref label
+.endm
+DEFINE_DOSBUSERRLONG: .macro label
 .endm
 
-DEFINE_DOSBUSERRLONG: .macro label
-.xref label
-.endm
+.global DosBusErrByte
+.global DosBusErrWord
+.global DosBusErrLong
 
 
 .endif

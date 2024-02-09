@@ -2,9 +2,6 @@
 
 .include si.mac
 
-.xref check_bus_error_byte
-.xref check_bus_error_word
-
 
 FC_CPU: .equ 7
 PMMU_REG: .equ $24000
@@ -220,7 +217,7 @@ is040Excel:
 ;out d0/ccr
 Accelerator_GetPhantomX::
   lea (PHANTOMX_EA8000_REG),a0
-  bsr check_bus_error_word
+  bsr DosBusErrWord
   beq @f
     moveq #0,d0
     rts
@@ -266,7 +263,7 @@ Accelerator_GetXellent30::
   rts
 
 getXt30:
-  bsr check_bus_error_byte
+  bsr DosBusErrByte
   bne @f
     bset d1,d7
   @@:
@@ -284,10 +281,10 @@ awe2: .equ AWESOMEX_EC8000_DSPCTRL
 Accelerator_AwesomexExists::
   move.l a0,-(sp)
   lea (awe1),a0
-  bsr check_bus_error_word
+  bsr DosBusErrWord
   bne @f
     lea (awe2-awe1,a0),a0
-    bsr check_bus_error_word
+    bsr DosBusErrWord
   @@:
   seq d0
   neg.b d0

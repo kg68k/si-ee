@@ -2,8 +2,6 @@
 
 .include si.mac
 
-.xref check_bus_error_word
-
 
 PHANTOMX_EA8000_REG:  .equ $ea8000
 PHANTOMX_EA8002_DATA: .equ $ea8002
@@ -25,7 +23,7 @@ PHANTOMX_TEMPERATURE: .equ $00f0
 PhantomX_Exists::
   move.l a0,-(sp)
   lea (PHANTOMX_EA8000_REG),a0
-  bsr check_bus_error_word
+  bsr DosBusErrWord
   bne @f
     moveq #1,d0
     bra 9f

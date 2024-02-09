@@ -2,9 +2,6 @@
 
 .include si.mac
 
-.xref check_bus_error_byte
-.xref check_bus_error_long
-
 
 SYSTEM_PORT6_E8E00B: .equ $e8e00b
 SPC_E9602D_SSTS:     .equ $e9602d
@@ -75,7 +72,7 @@ Model_GetType::
 ;  読み込まれる。常に$ff。
 isScsiModel:
   lea (SPC_E9602D_SSTS),a0
-  bsr check_bus_error_byte
+  bsr DosBusErrByte
   bne @f  ;XEiJ 0.21.01.11のSASI内蔵機種でバスエラーになる対策
   not.b d0
   beq @f
@@ -142,7 +139,7 @@ romVerTableXvi:
 ;out d0/ccr
 isXeij:
   lea (XEIJ_E9F03C_HFS_MAGIC),a0
-  bsr check_bus_error_long
+  bsr DosBusErrLong
   bne @f
     cmpi.l #'JHFS',d0
     bne @f

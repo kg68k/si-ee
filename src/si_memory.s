@@ -4,7 +4,6 @@
 .include iocscall.mac
 
 .xref is_060turbo
-.xref check_bus_error_word
 .xref hexstr_long
 .xref fe_iusing
 
@@ -44,7 +43,7 @@ Memory_GetMainArea::
   move.l a0,-(sp)
   suba.l a0,a0
 @@:
-  bsr check_bus_error_word
+  bsr DosBusErrWord
   bne @f
   adda.l #$10_0000,a0
   cmpa.l #$c0_0000,a0

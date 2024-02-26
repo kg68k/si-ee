@@ -3246,8 +3246,12 @@ print_iob_no_fs_b:
 
 
 * Mercury-Unit
-		bsr	is_exist_mercury_unit2
+		bsr	is_exist_mercury_unit
+		tst	d0
 		beq	print_iob_no_mu
+
+		move.b	(opt_m35_flag,a6),d1
+		bsr	identify_mercury_unit35
 
 		lea	(a3),a2
 		lea	(b_mu,pc),a1
@@ -4521,19 +4525,13 @@ is_exist_midi:
 *└────────────────────────────────────────┘
 
 sw_f_mercury:
-		bsr	is_exist_mercury_unit2
+		bsr	is_exist_mercury_unit
+		move.b	(opt_m35_flag,a6),d1	;互換性のため、-m(--m35)無指定時は
+		beq	@f			;ハーフレートでもV3.5と判別しない
+		bsr	identify_mercury_unit35
+@@:
 		bra	exit_d0
 
-
-* ～V3.1/V3.5 判別付き Mercury-Unit 存在検査.
-* out	d0.l	0:存在しない
-*		1:Mercury-Unit ～V3.1
-*		2:Mercury-Unit V4(MK-MU1)
-*		3:Mercury-Unit V4 with OPN3-L(MK-MU1O)
-*		4:Mercury-Unit V3.5
-*	ccr	<tst.l d0> の結果
-* 仕様:
-*	設定が破壊されたり、動作中に実行すると音が乱れる可能性がある.
 
 MERC_NON:	.equ	0
 MERC_V3:	.equ	1
@@ -4541,31 +4539,43 @@ MERC_V4:	.equ	2
 MERC_V4OPNA:	.equ	3
 MERC_V35:	.equ	4
 
-is_exist_mercury_unit2:
-		PUSH	d1/a0
-		move	sr,-(sp)
-		bsr	is_exist_mercury_unit
-		tst.b	(opt_m35_flag,a6)
-		beq	is_exist_mu2_end
+* Mercury-Unit の V3.1 以下と V3.5 を判別する。
+* in	d0.l	is_exist_mercury_unit の返り値(0:なし 1:～V4.1 2:MK-MU1 3:MK-MU1O)
+*	d1.b	動作モードを変更しての判別を行うか(0:しない それ以外:する)
+* out	d0.l	0:存在しない
+*		1:V3.1 以下、またはV3.1/V3.5を判別しない
+*		2:V4(MK-MU1)
+*		3:V4 with OPN3-L(MK-MU1O)
+*		4:V3.5
+* 仕様:
+*	入出力中に実行すると音が乱れることがある。
+
+identify_mercury_unit35:
 		cmpi	#MERC_V3,d0
-		bne	is_exist_mu2_end
+		bne	9f
 
+		PUSH	d2-d3/a0
 		lea	(MU_COMMAND),a0
-		tst.b	(MU_STATUS-MU_COMMAND)
-		bpl	is_exist_mu2_v35	;既にハーフレートに設定されている
+		tst.b	(MU_STATUS-MU_COMMAND,a0)
+		bpl	identify_mu35_v35	;すでにハーフレートに設定されていれば V3.5
+		tst.b	d1
+		beq	8f			;動作モードを変更しての判別は行わない
 
-		DI
-		and.b	#$7f,(a0)		;ハーフレートにしてみる
-		tst.b	(MU_STATUS-MU_COMMAND)
-		bmi	is_exist_mu2_end	;変化しなかったら ～V3.1
-
-		tas	(a0)			;元に戻す
-is_exist_mu2_v35:
-		moveq	#MERC_V35,d0		;ハーフレートに出来れば V3.5
-is_exist_mu2_end:
+		moveq	#$7f,d2
+		PUSH_SR_DI
+		move.b	(a0),d3
+		and.b	d3,d2			;bit7=0
+		move.b	d2,(a0)			;ハーフレートにしてみる
+		move.b	(MU_STATUS-MU_COMMAND,a0),d2
+		move.b	d3,(a0)			;元の設定に戻す
 		POP_SR
-		POP	d1/a0
-		tst.l	d0
+		tst.b	d2
+		bmi	8f			;ハーフレートにならなかったら V3.1 以下
+identify_mu35_v35:
+		moveq	#MERC_V35,d0		;ハーフレートになれば V3.5
+8:
+		POP	d2-d3/a0
+9:
 		rts
 
 

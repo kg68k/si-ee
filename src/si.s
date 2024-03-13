@@ -3210,7 +3210,7 @@ print_iob_no_ppi_fs:
 print_iob_no_ppi_fs2:
 
 *	Xellent30(#2)が存在すれば、FineScanner-X68(#$8～#$b)、
-*	KeplerXは有り得ない
+*	Kepler Xは有り得ない
 		lea	(XT30_IO2+$100),a0
 		bsr	DosBusErrWord
 		beq	print_iob_no_fs_b
@@ -3220,7 +3220,7 @@ print_iob_no_ppi_fs2:
 		moveq	#3-1,d1
 		bsr	print_iob_fs_sub
 
-* KeplerX (開発中仕様: $00ecb000-$00ecbfff)
+* Kepler X (開発中仕様: $00ecb000-$00ecbfff)
 		lea	(KEPLERX_IO),a0
 		bsr	DosBusErrWord
 		bne	print_iob_no_keplerx
@@ -3778,7 +3778,7 @@ b_gpib:		.dc.b	'$eafe00 ～ $eafe1f  GP-IB',0
 
 b_awe:		.dc.b	'$ec0000 ～ $ec8001  AWESOME-X',0
 b_ppi:		.dc.b	'$ec0000 ～ $ec0007  X68K-PPI',0
-b_keplerx:	.dc.b	'$ecb000 ～ $ecbfff  KeplerX',0
+b_keplerx:	.dc.b	'$ecb000 ～ $ecbfff  Kepler X',0
 b_mu:		.dc.b	'$ecc000 ～ $ecc0ff  Mercury-Unit',0
 b_nept:		.dc.b	'$ece000 ～ $ece3ff  Neptune-X (#0)',0
 b_nere:		.dc.b	'$ece300 ～ $ece3ff  Nereid (#0)',0

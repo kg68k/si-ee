@@ -5,7 +5,7 @@ $(error do not execute make in src directory)
 endif
 
 AS	= has060
-ASFLAGS	= -d
+ASFLAGS	= -d -w2
 LD	= hlk
 LD_R	= $(LD) -r
 LDFLAGS	=

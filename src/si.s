@@ -50,6 +50,8 @@
 		.xref	PhantomX_GetWait,PhantomX_WaitToString
 		.xref	PhantomX_GetFddSwap,PhantomX_FddSwapToString
 		.xref	PhantomX_GetTemperature,PhantomX_TemperatureToString
+* si_mpuclk.s
+		.xref	MpuClock_GetString
 * si_scsiex.s
 		.xref	Scsiex_GetType
 		.xref	Scsiex_ToString
@@ -124,9 +126,6 @@ MFP:		.equ	$e88000
 ~MFP_IERB:	.equ	$09
 ~MFP_IMRA:	.equ	$13
 ~MFP_IMRB:	.equ	$15
-~MFP_TCDCR:	.equ	$1d
-~MFP_TCDR:	.equ	$23
-~MFP_TDDR:	.equ	$25
 
 RTC:		.equ	$e8a000
 ~RTC_1SEC:	.equ	$01
@@ -134,7 +133,6 @@ RTC:		.equ	$e8a000
 ~RTC_RESET:	.equ	$1f
 
 SYS_P6:		.equ	$e8e00b			;CPU Type/CPU Clock
-SYS_P7:		.equ	$e8e00d			;SRAM Write En/Dis
 
 JOYSTICK1:	.equ	$e9a001
 
@@ -243,16 +241,6 @@ SCSIROM:	.equ	$fc0000
 SCSIIN_ID:	.equ	$fc0024			;'SCSIIN'
 
 
-* Macro --------------------------------------- *
-
-SRAM_WRITE_ENABLE:	.macro
-		move.b	#$31,(SYS_P7)
-		.endm
-SRAM_WRITE_DISABLE:	.macro
-		clr.b	(SYS_P7)
-		.endm
-
-
 * Offset Table -------------------------------- *
 
 		.offset	0
@@ -261,12 +249,7 @@ reg_save:	.ds.l	2
 trap14_save:	.ds.l	1
 
 restore_prog:	.ds.l	1
-iera_save:	.ds.b	1
-ierb_save:	.ds.b	1
-imra_save:	.ds.b	1
-imrb_save:	.ds.b	1
 
-		.quad
 rom_version:	.ds.l	1
 
 emu_ver_type:
@@ -283,6 +266,7 @@ mpu_type:	.ds.b	1
 fpu_exist:	.ds.b	1
 xt30_id3:	.ds.b	1
 atty_flag:	.ds.b	1
+phantomx:	.ds.b	1
 
 opt_all_flag:	.ds.b	1
 opt_cut_flag:	.ds.b	1
@@ -694,6 +678,8 @@ emu_check_exit:
 * 初期化いろいろ(メイン表示直前) -------------- *
 
 init_misc2:
+  bsr PhantomX_Exists
+  move.b d0,(phantomx,a6)
 
 ;メモリ容量の表示桁数
 		bsr	Memory_GetHighArea
@@ -913,7 +899,7 @@ print_phantomx:
 		lea	(px_title,pc),a1
 		bsr	px_strcpy
 
-		bsr	PhantomX_Exists
+		tst.b	(phantomx,a6)
 		bne	print_px_exists
 
 		tst.b	(opt_all_flag,a6)
@@ -1077,239 +1063,108 @@ clocksw_title:	.dc.b	'clock switch		: ',0
 *└────────────────────────────────────────┘
 
 print_mpu:
-		lea	(-512,sp),sp
-		lea	(sp),a0
-		lea	(mpu_title,pc),a1
-		STRCPY	a1,a0,-1
+  lea  (-512,sp),sp
+  lea  (sp),a0
+  lea  (mpu_title,pc),a1
+  STRCPY a1,a0,-1
+  moveq	#0,d7
+  move.b (mpu_type,a6),d7
 
-		pea	(a0)
-		clr.l	-(sp)
-		pea	(env_mpupack,pc)
-		DOS	_GETENV
-		addq.l	#12-4,sp
-		move.l	d0,(sp)+
-		bmi	print_mpu_no_env
+  bsr appendMpuPackOrName
+  bsr appendMpuClock
+  bsr appendMpuTypeWarning
+  bsr appendRomcntWarning
 
-		STREND	a0			;$MPUPACK 有り
-		bra	print_mpu_clock
-print_mpu_no_env:
-* 対応 MPU
-* 68000
-* 68010
-* 68020 (68EC020 は判別不可)
-* 68030 68EC030
-* 68040 68EC040 68LC040
-* 68040 68EC040 68LC040
-		move.b	(mpu_type,a6),d7
-		cmpi.b	#2,d7
-		bls	print_mpu_680x0		;68000/010/020
+  STRCPY_EOL a0
+  bsr print_stack_buffer
+  lea (512,sp),sp
+  rts
 
-		lea	(mpu_68ec000,pc),a1
-		tst.b	(MMUEXIST)
-		beq	print_mpu_set		;68EC030/040/060
 
-		cmpi.b	#3,d7			;68LC030 は存在しないので
-		beq	print_mpu_680x0		;030 はこの時点で 68030 に確定
+appendMpuPackOrName:
+  pea (a0)
+  clr.l -(sp)
+  pea (env_mpupack,pc)
+  DOS _GETENV
+  addq.l #12-4,sp
+  move.l d0,(sp)+
+  bmi appendMpuName
 
-		addq.l	#mpu_68lc000-mpu_68ec000,a1
-		tst.b	(fpu_exist,a6)
-		beq	print_mpu_set		;68LC040/060
+  STREND a0  ;環境変数 MPUPACK が設定されていればその内容を表示する
+  rts
+
+;対応MPU
+;68000
+;68010
+;68020 (68EC020 は判別不可)
+;68030 68EC030
+;68040 68EC040 68LC040
+;68040 68EC040 68LC040
+appendMpuName:
+  cmpi.b #2,d7
+  bls print_mpu_680x0  ;68000/010/020
+
+  lea (mpu_68ec000,pc),a1
+  tst.b (MMUEXIST)
+  beq print_mpu_set  ;68EC030/040/060
+
+  cmpi.b #3,d7         ;68LC030 は存在しないので
+  beq print_mpu_680x0  ;030 はこの時点で 68030 に確定
+
+  addq.l #mpu_68lc000-mpu_68ec000,a1
+  tst.b (fpu_exist,a6)
+  beq print_mpu_set  ;68LC040/060
 print_mpu_680x0:
-		lea	(mpu_68000,pc),a1	;680x0
+  lea (mpu_68000,pc),a1 ;680x0
 print_mpu_set:
-		STRCPY	a1,a0,-1
-		add.b	d7,(-2,a0)
-print_mpu_clock:
-		move.b	#' ',(a0)+
-		move.b	#'(',(a0)+
+  STRCPY a1,a0,-1
+  add.b d7,(-.sizeof.('x0'),a0)
+  rts
 
-		moveq	#0,d6
-		cmpi.b	#1,d7
-		bls	print_mpu_clock_68000
-*print_mpu_clock_68020:
-		move	(ROMCNT),d0
-		seq	d6			;値が設定されていなかった
-		moveq	#6,d1
-		bra	print_mpu_clock_print
-print_mpu_clock_68000:
-		move	(ROMCNT),d0
-		cmpi.b	#ROMVER_XVI>>24,(rom_version,a6)
-		bcc	@f			;(Compact)XVI なら計測済み
-		bsr	count_sram_1ms_loop	;それ以外は自前で計測
-@@:
-		moveq	#10+2,d1		;dbra+wait
-print_mpu_clock_print:
-		mulu	d1,d0
-		moveq	#100/2,d1
-		add.l	d1,d0
-		divu	#100,d0			;clock(MHz)*10
-		andi.l	#$ffff,d0		;余りをクリア
+appendMpuClock:
+  lea (mpu_paren,pc),a1
+  tst.b (phantomx,a6)
+  beq @f
+    addq.l #mpu_paren_eff-mpu_paren,a1
+  @@:
+  STRCPY a1,a0,-1
 
-		divu	#10,d0
-		lea	(mpu_mhz,pc),a1
-		swap	d0
-		add.b	d0,(1,a1)		;小数第一位(0.1MHz 単位)
-		clr	d0
-		swap	d0			;整数部(1MHz 単位)
-		bsr	decstr
-		STRCPY	a1,a0,-1		;.?MHz)
+  move.l d7,d0
+  bsr MpuClock_GetString
+  move.b #')',(a0)+
+  rts
 
-		cmp.b	(MPUTYPE),d7		;IOCS ワークの値を確かめる
-		beq	@f
-		lea	(mputype_bug,pc),a1	;IOCS ワークに設定されている MPU 種類
-		STRCPY	a1,a0,-1		;が間違っていたら警告を表示する
-		move.l	(MPUTYPE),d0
-**		ror.l	#8,d0
-		bsr	hexstr_byte
-		move.b	#')',(a0)+
-@@:
-		tst.b	d6
-		beq	@f
-		lea	(romcnt_bug,pc),a1	;IOCS ワークに MPU 速度が設定されて
-		STRCPY	a1,a0,-1		;いなかったら警告を表示する
-@@:
-		STRCPY_EOL a0
-		bsr	print_stack_buffer
-		lea	(512,sp),sp
-		rts
+;IOCS ワークの MPU 種別が正しくなかったら警告を表示する
+appendMpuTypeWarning:
+  move.b (MPUTYPE),d0
+  cmp.b d7,d0
+  beq @f
+    lea (mputype_bug,pc),a1
+    STRCPY a1,a0,-1
+    ror.l #8,d0  ;バイト値を左詰めにする
+    bsr hexstr_byte
+    move.b #')',(a0)+
+  @@:
+  rts
 
-
-* クロック計測 -------------------------------- *
-* out	d0.w	ループ回数
-*
-* SRAM 上で 1ms 内に dbra の空ループが何回実行できるかを測定する.
-* 回数*12*1000 で MHz が求まる(12 は dbra+wait の動作クロック数).
-* RAM 上で計測して *10*1000 では、時々ウェイトが入る為か微妙に遅い
-* 値になるので、ROM と同じウェイトの SRAM で計測している.
-*
-* 注意:
-* S-RAM に一時的に計測ルーチンを書き込んでいる.
-* Timer-C を設定を変更して使用している. このため、システム時間が
-* 多少遅延する.
-
-COUNT_ADR:	.equ	$ed00c0
-COUNT_SIZE:	.equ	count_sram_1ms_job_end-count_sram_1ms_job
-
-count_sram_1ms_loop:
-		PUSH	d1-d7/a0-a6
-		move	sr,-(sp)
-		lea	(COUNT_ADR),a5
-
-		lea	(a5),a0			;復帰情報を用意する
-		lea	(sram_save,a6),a1
-		moveq	#COUNT_SIZE/2-1,d0
-		DI
-@@:		move	(a0)+,(a1)+		;SRAM の内容を保存
-		dbra	d0,@b
-
-		move.l	(TIMERC_VEC*4),(vec_save-work_top,a6)
-
-		lea	(MFP),a0
-		move.b	(~MFP_IERA,a0),(iera_save,a6)
-		move.b	(~MFP_IERB,a0),(ierb_save,a6)
-		move.b	(~MFP_IMRA,a0),(imra_save,a6)
-		move.b	(~MFP_IMRB,a0),(imrb_save,a6)
-
-		lea	(count_sram_1ms_restore,pc),a2
-		move.l	a2,(restore_prog,a6)	;復帰ルーチンを登録
-
-		SRAM_WRITE_ENABLE
-		lea	(count_sram_1ms_job,pc),a2
-		lea	(a5),a1
-		moveq	#COUNT_SIZE/2-1,d0
-@@:		move	(a2)+,(a1)+		;SRAM に計測ルーチンを書き込む
-		dbra	d0,@b
-		SRAM_WRITE_DISABLE
-
-		moveq	#$00,d0
-		move.b	d0,(~MFP_IERA,a0)
-		move.b	d0,(~MFP_IMRA,a0)
-		moveq	#$20,d0
-		move.b	d0,(~MFP_IERB,a0)	;Timer-C のみ許可
-		move.b	d0,(~MFP_IMRB,a0)
-
-		andi.b	#$0f,(~MFP_TCDCR,a0)	;Timer-C 停止
-
-		lea	(count_sram_1ms_int,pc),a2
-		move.l	a2,(TIMERC_VEC*4)	;割り込み処理アドレスを設定
-
-		moveq	#-1,d1
-		jsr	(a5)			;SRAM 上で計測
-
-		bsr	count_sram_1ms_restore	;後始末
-		POP_SR
-
-		neg	d1
-		subq	#1,d1
-		moveq	#0,d0
-		move	d1,d0
-		bne	@f
-		move	#979,d0
-@@:
-		POP	d1-d7/a0-a6
-		rts
-
-
-* Timer-C を元に戻す
-* in	a6.l	work_top
-
-count_sram_1ms_restore:
-		PUSH_SR_DI
-		PUSH	d0/a0-a1
-		lea	(MFP),a0
-
-		move.l	(vec_save-work_top,a6),(TIMERC_VEC*4)
-
-		andi.b	#$0f,(~MFP_TCDCR,a0)	;Timer-C の設定を元に戻す
-		move.b	#200,(~MFP_TCDR,a0)
-		ori.b	#$70,(~MFP_TCDCR,a0)
-
-		move.b	(imra_save,a6),(~MFP_IMRA,a0)
-		move.b	(imrb_save,a6),(~MFP_IMRB,a0)
-		move.b	(iera_save,a6),(~MFP_IERA,a0)
-		move.b	(ierb_save,a6),(~MFP_IERB,a0)
-
-		SRAM_WRITE_ENABLE
-		lea	(sram_save,a6),a0
-		lea	(COUNT_ADR),a1
-		moveq	#COUNT_SIZE/2-1,d0
-@@:
-		move	(a0)+,(a1)+		;元のデータに戻す
-		dbra	d0,@b
-		SRAM_WRITE_DISABLE
-
-		clr.l	(restore_prog,a6)	;復帰ルーチンを削除
-
-		POP	d0/a0-a1
-		POP_SR
-		rts
-
-
-* in	a0.l	MFP
-*	a5.l	戻りアドレス
-* out	d1.w	dbraの残り回数
-
-count_sram_1ms_job:
-		move.b	#250,(~MFP_TCDR,a0)		;ここから
-		move	#$2500,sr
-		ori.b	#$30,(~MFP_TCDCR,a0)		;Timer-C 動作開始
-count_sram_1ms_job_loop:
-		dbra	d1,count_sram_1ms_job_loop
-count_sram_1ms_job_rts:
-		rts					;ここまで SRAM に転送
-count_sram_1ms_job_end:
-
-count_sram_1ms_int:
-		pea	(count_sram_1ms_job_rts,pc)	;dbra のループから抜ける
-		move.l	(sp)+,(2,sp)
-		rte
+;68020 以上で IOCS ワークに MPU 速度が設定されていなかったら警告を表示する
+appendRomcntWarning:
+  cmpi.b #2,d7
+  bcs @f
+    tst (ROMCNT)
+    bne @f
+      lea (romcnt_bug,pc),a1
+      STRCPY a1,a0,-1
+  @@:
+  rts
 
 
 mpu_title:	.dc.b	'micro processing unit	: ',0
 mpu_68000:	.dc.b	'68000',0
 mpu_68ec000:	.dc.b	'68EC000',0
 mpu_68lc000:	.dc.b	'68LC000',0
-mpu_mhz:	.dc.b	'.0MHz)',0
+mpu_paren:	.dc.b	' (',0
+mpu_paren_eff:	.dc.b	' (effective ',0
 mputype_bug:	.dc.b	' (Warning: $cbc.b = $',0
 romcnt_bug:	.dc.b	' (Warning: $cb8.w = 0)',0
 env_mpupack:	.dc.b	'MPUPACK',0

@@ -18,7 +18,8 @@ SRCDIR_MK = ../srcdir.mk
 SRC_DIR = ../src
 -include $(SRCDIR_MK)
 
-SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s si_memory.s si_scsiex.s si_sram.s
+SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s \
+	  si_mpuclk.s si_memory.s si_scsiex.s si_sram.s
 OBJS	= $(SRCS:.s=.o)
 SI_R	= si.r
 SI_X	= si.x

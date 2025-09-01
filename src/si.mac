@@ -61,6 +61,8 @@ MMUEXIST: .equ $cbe  ;1.b
 ROMCNT:   .equ $cb8
 MPUTYPE:  .equ $cbc  ;1.b
 
+ROMCNT_U32: .equ $d20  ;1.l XEiJ IPLROM 1.6
+
 IOCS_ROM: .equ $ff0000
 
 

@@ -9,7 +9,7 @@
 │		       Copyright (C)1997 Arisugawa Seara		    │
 │									    │
 │		      System Information Extended Edition		    │
-│			Copyright (C)1999-2024 TcbnErik			    │
+│			Copyright (C)1999-2025 TcbnErik			    │
 └─────────────────────────────────────┘
 
 
@@ -266,6 +266,9 @@ micro processing unit
 	時的に SRAM を書き換えて使用します。また、MPU の種類が IOCS ワークに正
 	しく設定されていない場合と、68020 以上の MPU で動作クロックが計測され
 	ていない場合は警告を表示します。
+
+	　PhantomX 装着時は動作クロックは相当する値を表示するため、
+	「effective」と表記されます。
 
 	○この項目は常に表示されます。
 

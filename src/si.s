@@ -78,7 +78,7 @@ STDERR:		.equ	2
 
 WAIT_COLOR:	.equ	1			;水色(変更可能)
 MEMSIZE_LEN:	.equ	.sizeof.('262144')	;256MB
-LONG_OPT_MAX:	.equ	7+1			;"-f-","--"は含まない(+1 は末尾の NUL)
+LONG_OPT_MAX:	.equ	15+1			;"-f-","--"は含まない(+1 は末尾の NUL)
 		.fail	LONG_OPT_MAX.and.1	;必ず偶数であること
 
 PRINT_BUF_SIZE:	.equ	 4*1024
@@ -275,6 +275,7 @@ opt_iob_flag:	.ds.b	1
 opt_m35_flag:	.ds.b	1
 opt_exp_flag:	.ds.b	1
 opt_omit_flag:	.ds.b	1
+opt_self_measure:.ds.b	1
 
 		.quad
 sizeof_work_c:
@@ -479,6 +480,11 @@ option_omit:	not.b	(opt_omit_flag,a6)
 
 option_power:	not.b	(opt_pow_flag,a6)
 		sf	(opt_iob_flag,a6)
+		bra	@f
+
+option_self_measure:
+		not.b	(opt_self_measure,a6)
+		bra	@f
 @@:
 		tst	d0			;1文字オプションの文字
 		beq	arg_loop		;0ならロングオプション
@@ -500,7 +506,7 @@ long_option:
 		lea	(long_opt_table1,pc),a1
 		lea	(long_opt_table2,pc),a2
 @@:
-		subq.l	#LONG_OPT_MAX,sp
+		lea	(-LONG_OPT_MAX,sp),sp
 		lea	(sp),a0
 		moveq	#LONG_OPT_MAX-1,d1
 get_long_option_loop:
@@ -509,7 +515,7 @@ get_long_option_loop:
 		beq	@f
 		ori.b	#$20,(a0)+
 		dbra	d1,get_long_option_loop
-		addq.l	#LONG_OPT_MAX,sp	;オプションが長すぎる
+		lea	(LONG_OPT_MAX,sp),sp	;オプションが長すぎる
 		bra	print_short_help
 @@:
 search_long_option_loop:
@@ -531,7 +537,7 @@ search_long_option_nul:
 		tst.b	(a0)+
 		bne	search_long_option_next
 
-		addq.l	#LONG_OPT_MAX,sp	;オプションが見つかった
+		lea	(LONG_OPT_MAX,sp),sp	;オプションが見つかった
 		adda	(a2),a2
 		moveq	#0,d0			;ロングオプションモード
 		jmp	(a2)
@@ -1130,6 +1136,11 @@ appendMpuClock:
   STRCPY a1,a0,-1
 
   move.l d7,d0
+  bne @f
+    tst.b (opt_self_measure,a6)
+    beq @f
+      bset #31,d0  ;強制自己測定モード
+  @@:
   bsr MpuClock_GetString
   move.b #')',(a0)+
   rts
@@ -5134,6 +5145,7 @@ long_opt_table1:
 		.dc.b	'scsi',0
 		.dc.b	'version',0
 		.dc.b	'license',0
+		.dc.b	'self-measure',0
 		.dc.b	0
 		.even
 long_opt_table2:
@@ -5149,6 +5161,7 @@ long_opt_table2:
 		.dc	print_scsi_info-$
 		.dc	print_version-$
 		.dc	print_license-$
+		.dc	option_self_measure-$
 
 
 * 文字列データ -------------------------------- *
@@ -5161,7 +5174,7 @@ license_mes:
 		.dc.b	'Copyright (C)1992-1993  Misao.Satake',LF
 		.dc.b	'Copyright (C)1993-1997  Tatsuya.Tsuyuzaki',LF
 		.dc.b	'Copyright (C)1997/09/13 Arisugawa Seara',LF
-		.dc.b	'Copyright (C)1999-2022  TcbnErik',LF
+		.dc.b	'Copyright (C)1999-2025  TcbnErik',LF
 		.dc.b	LF
 		.dc.b	0
 
@@ -5191,6 +5204,7 @@ switch_mes:
 		.dc.b	'	-l  --license	print license',LF
 		.dc.b	'	-v  --version	print version',LF
 		.dc.b	'	-h  --help	print help',LF
+		.dc.b	'	--self-measure	self-measure the MPU clocks (68000 only)',LF
 		.dc.b	LF
 		.dc.b	'	-f-cs		Clock Switch',LF
 		.dc.b	'	-f-emu		Emulator',LF

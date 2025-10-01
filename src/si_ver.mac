@@ -1,2 +1,2 @@
-SIEE_VERSION: .reg '4.11'
-SIEE_DATE: .reg '2025-09-02'
+SIEE_VERSION: .reg '4.12'
+SIEE_DATE: .reg '2025-10-02'

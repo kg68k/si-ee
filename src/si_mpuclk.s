@@ -3,6 +3,8 @@
 .include si.mac
 
 .xref fe_idiv,decstr
+U32DivMod: .reg fe_idiv
+U32ToDecimalString: .reg decstr
 
 
 MFP: .equ $e88000
@@ -31,18 +33,20 @@ SRAM_WRITE_DISABLE: .macro
 ;MPUクロック数(kHz)の値を返す。
 ;  スーパーバイザモードで呼び出すこと。
 ;in
-;  d0.l ... MPU種類(0:68000 ... 6:68060)
+;  d0.l ... bit31=1: 常に自己測定  bit7-0: MPU種類(0:68000 ... 6:68060)
 ;out
 ;  d0.l ... MPUクロック数(kHz)
 MpuClock_GetClock::
   PUSH d1-d2
   move.l d0,d2
-  move.l (ROMCNT_U32),d0
-  bne @f
-    move (ROMCNT),d0
+  bmi 1f
+    move.l (ROMCNT_U32),d0
     bne @f
-      move.l d2,d0
-      bsr MpuClock_CountLoopOnSram
+      move (ROMCNT),d0
+      bne @f
+        1:
+        move.l d2,d0
+        bsr MpuClock_CountLoopOnSram
   @@:
   move.l d0,d1
   add.l d0,d0
@@ -57,10 +61,10 @@ MpuClock_GetClock::
 
 
 ;MPUクロック数を文字列化して返す。
-;  指定したバッファに文字列(単位 MHz)を書き込む。
+;  指定したバッファに文字列(単位 kHz/MHz つき)を書き込む。
 ;  その他制限は MpuClock_GetClock と同じ。
 ;in
-;  d0.l ... MPU種類(0:68000 ... 6:68060)
+;  d0.l ... bit31=1: 常に自己測定  bit7-0: MPU種類(0:68000 ... 6:68060)
 ;  a0.l ... 文字列バッファ
 ;out
 ;  d0.l ... MPUクロック数(kHz)
@@ -69,21 +73,29 @@ MpuClock_GetString::
   bsr MpuClock_GetClock
   PUSH d0-d1  ;d0も返り値なので保存
 
-  moveq #50,d1
-  add.l d1,d0
-  move.l #1000,d1
-  bsr fe_idiv  ;MHz単位の値に換算
-  bsr decstr
-  move.b #'.',(a0)+
-  move.l d1,d0
   moveq #100,d1
-  bsr fe_idiv  ;余りを0.1MHz単位の値に換算
-  addi.b #'0',d0
-  move.b d0,(a0)+  ;少数第1位まで出力
-
-  .irpc ch,MHz
-    move.b #'&ch',(a0)+
-  .endm
+  cmp.l d1,d0
+  bcc 1f
+    bsr U32ToDecimalString  ;0.1MHz未満はkHz単位で出力
+    moveq #'k',d0
+    bra 2f
+  1:
+    moveq #50,d1
+    add.l d1,d0
+    move.l #1000,d1
+    bsr U32DivMod  ;MHz単位の値に換算
+    bsr U32ToDecimalString
+    move.b #'.',(a0)+
+    move.l d1,d0
+    moveq #100,d1
+    bsr U32DivMod  ;余りを0.1MHz単位の値に換算
+    addi.b #'0',d0
+    move.b d0,(a0)+  ;少数第1位まで出力
+    moveq #'M',d0
+  2:
+  move.b d0,(a0)+  ;k or M
+  move.b #'H',(a0)+
+  move.b #'z',(a0)+
   clr.b (a0)
 
   POP d0-d1
@@ -115,7 +127,7 @@ MAX_CODE_SIZE: .equ 16
 ;  スーパーバイザモードで呼び出すこと。
 ;  68000,68010以外には対応していない。
 ;in
-;  d0.l ... MPU種類(0:68000 ... 6:68060)
+;  d0.l ... bit7-0: MPU種類(0:68000 ... 6:68060)
 ;out
 ;  d0.l ... MPUクロック数(kHz)。68020以上の場合は0
 ;
@@ -129,7 +141,7 @@ MAX_CODE_SIZE: .equ 16
 ;  MFP Timer-Cを設定を変更して使用している。このため、システム時間が多少遅延する。
 ;
 MpuClock_CountLoopOnSram::
-  subq.l #2,d0
+  subq.b #2,d0
   bcs Count68000
 
   moveq #0,d0

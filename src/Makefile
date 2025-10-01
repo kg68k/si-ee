@@ -9,14 +9,10 @@ ASFLAGS	= -d -w2
 LD	= hlk
 LD_R	= $(LD) -r
 LDFLAGS	=
+U8TOSJ = u8tosj
 
 BINDIR	= /usr/local/bin
 MANDIR	= /usr/local/man/cat1
-
-U8TOSJ = u8tosj
-SRCDIR_MK = ../srcdir.mk
-SRC_DIR = ../src
--include $(SRCDIR_MK)
 
 SRCS	= si.s si_util.s si_emu.s si_model.s si_acc.s si_phantomx.s \
 	  si_mpuclk.s si_memory.s si_scsiex.s si_sram.s
@@ -25,16 +21,24 @@ SI_R	= si.r
 SI_X	= si.x
 DOCS	= si.txt changelog.txt
 
-SI_ZIP	= siee.zip
+ARCHIVE_ZIP = siee.zip
 
 
 .PHONY: all archive install clean
 all: $(SI_R)
 
 
-archive: $(SI_ZIP)
+ifdef SRC_DIR
+archive: $(ARCHIVE_ZIP)
+else
+archive: ../srcdir.txt
+	$(if $(SRC_DIR_IS_DEFINED),$(error SRC_DIR is empty.))
+	make $@ SRC_DIR_IS_DEFINED=yes SRC_DIR=$(shell cat ../srcdir.txt)
+../srcdir.txt:
+	$(error file 'srcdir.txt' created by src2build is required.)
+endif
 
-$(SI_ZIP): $(SI_R) $(DOCS)
+$(ARCHIVE_ZIP): $(SI_R) $(DOCS)
 	rm -f $@
 	zip -9 $@ $^
 
@@ -62,6 +66,6 @@ install:
 	cp $(SI_TXT) $(MANDIR)
 
 clean:
-	rm -f $(SI_ZIP) $(DOCS) $(SI_R) $(SI_X) $(OBJS)
+	rm -f $(ARCHIVE_ZIP) $(DOCS) $(SI_R) $(SI_X) $(OBJS)
 
 # EOF

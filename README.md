@@ -7,29 +7,30 @@ System Information の改造版です。
 
 
 ## Build
-PC やネット上で扱いやすくするために、ソースファイルは UTF-8 で記述されています。
-X68000 上でビルドする際には、UTF-8 から Shift_JIS への変換が必要です。
 
-### u8tosj を使用する方法
+PCやネット上での取り扱いを用意にするために、src/内のファイルはUTF-8で記述されています。
+X680x0上でビルドする際には、UTF-8からShift_JISへの変換が必要です。
 
-あらかじめ、[u8tosj](https://github.com/kg68k/u8tosj) をビルドしてインストールしておいてください。
+### src2buildを使用する場合
 
-トップディレクトリで make を実行してください。以下の処理が行われます。
-1. build ディレクトリの作成。
-2. si.txt を Shift_JIS に変換して build/ へ保存。
-3. src/ 内の各ファイルを Shift_JIS に変換して build/ へ保存。
+必要ツール: [src2build](https://github.com/kg68k/src2build)
 
-次に、カレントディレクトリを build/ に変更し、make を実行してください。
-実行ファイルが作成されます。
+srcディレクトリのある場所で以下のコマンドを実行します。
+```
+src2build src
+make -C build
+```
 
-### u8tosj を使用しない方法
+### その他の方法
 
-ファイルを適当なツールで適宜 Shift_JIS に変換してから make を実行してください。
-UTF-8 のままでは正しくビルドできませんので注意してください。
+src/内のファイルを適当なツールで適宜Shift_JISに変換して別のディレクトリに保存し、
+ディレクトリ内で`make`を実行してください。  
+UTF-8のままでは正しくビルドできません。
 
 
 ## Author
-原著作者: M.Satake 氏および BEL. 氏  
 
-改造版作者: TcbnErik / 立花@桑島技研 https://github.com/kg68k/si-ee
+原著作者: M.Satake氏およびBEL.氏
+
+改造版作者: TcbnErik / https://github.com/kg68k/si-ee
 

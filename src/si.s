@@ -2793,7 +2793,7 @@ print_io_board:
 
 
 * d7.l
-* bit[31] = 0:TS-6BGA (G-RAM #1)無し 1:有り
+* bit[31] = TS-6BGAのG-RAMバンク#1の有無 0:無し 1:有り
 *
 * bit[ 7] = Nereid(#1) バンクメモリ有無 0:無し 1:有り
 * bit[ 6] = Nereid(#1) バンクメモリ容量 0:4MB 1:16MB
@@ -3226,7 +3226,7 @@ print_iob_no_mu_ne:
 *	TS-6BGA が存在し、かつ G-RAM バンクが #1 であれば
 *	POLYPHON、PSX16550、PSX16750 は有り得ない
 		tst.l	d7
-		bne	print_iob_no_poly_psx
+		bmi	print_iob_no_poly_psx
 
 
 * POLYPHON (#0 / #1)

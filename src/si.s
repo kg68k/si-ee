@@ -2792,31 +2792,32 @@ print_io_board:
 		moveq	#0,d6			;1=一枚でもボードが存在する
 
 
-* bit[n+3] = 0:バンクメモリ無し 1:有り
-* bit[n+2] = 0:バンクメモリ 4MB 1:16MB
-* bit[n+1] = 0:バンクメモリ $eexxxx 1:$efxxxx
-* bit[n+0] = 0:Nereid 無し 1:有り
-* n=0:Nereid(#0) / n=4:Nereid(#1)
+* d7.l
 * bit[31] = 0:TS-6BGA (G-RAM #1)無し 1:有り
+*
+* bit[ 7] = Nereid(#1) バンクメモリ有無 0:無し 1:有り
+* bit[ 6] = Nereid(#1) バンクメモリ容量 0:4MB 1:16MB
+* bit[ 5] = Nereid(#1) バンクメモリアドレス 0:$00eexxxx 1:$00efxxxx
+* bit[ 4] = Nereid(#1) Nereid有無 0:無し 1:有り
+*
+* bit[ 3] = Nereid(#0) バンクメモリ有無 0:無し 1:有り
+* bit[ 2] = Nereid(#0) バンクメモリ容量 0:4MB 1:16MB
+* bit[ 1] = Nereid(#0) バンクメモリアドレス 0:$00eexxxx 1:$00efxxxx
+* bit[ 0] = Nereid(#0) Nereid有無 0:無し 1:有り
 		moveq	#0,d7
 
 * バンクメモリチェック
 *
-*   $ee0000～$eeffff、$ef0000～$efffff は TS-6BGA
-* の  G-RAM バンク及び、Nereid のバンクメモリとし
-* て使われる.
+* $ee0000～$eeffff、$ef0000～$efffff は TS-6BGA の G-RAM バンクおよび、Nereid
+* のバンクメモリとして使われる。
 *
-*   TS-6BGA と ispr16bitPCMBoard の判別は G-RAM
-* バンクがあるかどうかでしか出来ないので、先にチ
-* ェックすると Nereid のバンクメモリを誤認する可
-* 能性がある.
+* TS-6BGA と ispr16bitPCMBoard の判別は G-RAM バンクがあるかどうかでしかでき
+* ないので、先にチェックすると Nereid のバンクメモリを誤認する可能性がある。
 *
-*   よって、先に Nereid の実装確認を行う. なお、
-* Nereid の DRAM 未実装モデルを「バンク切り替えメ
-* モリ・イネーブル」設定で装着し、TS-6BGA も装着
-* すると、Nereid(バンク有り)＋ispr16bitPCMBoard
-* として判定すると思われるが、Nereid をそのような
-* 設定で使用してはいけないので、仕様とする.
+* よって先に Nereid の実装確認を行う。なお Nereid の DRAM 未実装モデルを
+* 「バンク切り替えメモリ・イネーブル」設定で装着し、TS-6BGA も装着すると
+* Nereid(バンク有り)＋ispr16bitPCMBoard として判定すると思われるが、Nereid
+* をそのような設定で使用してはいけないので仕様とする。
 
 * Nereid 実装確認
 		tst.b	(xt30_id3,a6)
@@ -3224,7 +3225,7 @@ print_iob_no_mu_ne:
 * POLYPHON / PSX
 *	TS-6BGA が存在し、かつ G-RAM バンクが #1 であれば
 *	POLYPHON、PSX16550、PSX16750 は有り得ない
-		tst	d7
+		tst.l	d7
 		bne	print_iob_no_poly_psx
 
 
@@ -5174,7 +5175,7 @@ license_mes:
 		.dc.b	'Copyright (C)1992-1993  Misao.Satake',LF
 		.dc.b	'Copyright (C)1993-1997  Tatsuya.Tsuyuzaki',LF
 		.dc.b	'Copyright (C)1997/09/13 Arisugawa Seara',LF
-		.dc.b	'Copyright (C)1999-2025  TcbnErik',LF
+		.dc.b	'Copyright (C)1999-2026  TcbnErik',LF
 		.dc.b	LF
 		.dc.b	0
 

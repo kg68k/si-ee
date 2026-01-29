@@ -3395,50 +3395,6 @@ is_exist_ga_end:
 		POP	d6/a0
 		rts
 
-.if 0
-is_exist_ts6bga_old:
-		PUSH	d1-d5/d7/a0
-		moveq	#0,d7
-
-		lea	(TS6BGA_PCMCTRL),a0
-		bsr	DosBusErrWord
-		bne	is_exist_ga_end
-
-		lea	(TS6BGA_EE0000),a0
-		bsr	DosBusErrWord
-		beq	@f			;bank #0
-		lea	(TS6BGA_EF0000),a0
-		bsr	DosBusErrWord
-		bne	is_exist_ga_end
-		addq	#1<<2,d7		;bank #1
-@@:
-		addq	#1<<0,d7		;存在する
-
-		lea	(TS6BGA_GA_HDR-TS6BGA_PCMCTRL,a0),a0
-		PUSH_SR_DI
-		move.b	(a0),d1			;ダミーリード
-		nop
-		move.b	(a0),d2			;〃
-		nop
-		move.b	(a0),d3			;〃
-		nop
-		move.b	(a0),d4			;〃
-		nop
-		move.b	(a0),d5			;Hidden DAC 読み込み
-		POP_SR
-	.irp	dn,d1,d2,d3,d4
-		and.b	dn,d5
-	.endm
-		not.b	d5
-		bne	is_exist_ga_end
-
-		addq	#1<<1,d7		;ispr16bitPCMBoard
-is_exist_ga_end:
-		move.l	d7,d0
-		POP	d1-d5/d7/a0
-		rts
-.endif
-
 
 * Neptune-X(Evolution) 表示下請け
 * in	d0.l	ID 番号(0～1)
